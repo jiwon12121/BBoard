@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCachedUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -10,25 +11,21 @@ export default async function WorkspacePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [
-    { data: workspace },
-    {
-      data: { user },
-    },
-    { data: documents },
-  ] = await Promise.all([
-    supabase
-      .from("workspaces")
-      .select("id, name, owner_id")
-      .eq("id", id)
-      .single(),
-    supabase.auth.getUser(),
-    supabase
-      .from("documents")
-      .select("id, title")
-      .eq("workspace_id", id)
-      .order("updated_at", { ascending: false }),
-  ]);
+  const [{ data: workspace }, user, { data: documents }] = await Promise.all(
+    [
+      supabase
+        .from("workspaces")
+        .select("id, name, owner_id")
+        .eq("id", id)
+        .single(),
+      getCachedUser(),
+      supabase
+        .from("documents")
+        .select("id, title")
+        .eq("workspace_id", id)
+        .order("updated_at", { ascending: false }),
+    ],
+  );
 
   if (!workspace) {
     redirect("/");

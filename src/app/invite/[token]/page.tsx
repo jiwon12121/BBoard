@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCachedUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 
 export default async function InvitePage({
@@ -8,10 +9,7 @@ export default async function InvitePage({
 }) {
   const { token } = await params;
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     redirect(`/login?next=${encodeURIComponent(`/invite/${token}`)}`);
