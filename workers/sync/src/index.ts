@@ -75,6 +75,9 @@ export default {
   async fetch(request: Request, env: Env) {
     return (
       (await routePartykitRequest(request, env, {
+        // Bias new Durable Object placement toward Asia-Pacific, close to
+        // both users and the Supabase (Seoul) project onLoad/onSave hit.
+        locationHint: "apac",
         // Reject the connection before the Durable Object even spins up if
         // the caller can't prove (via their own Supabase session) that
         // they're a member of the workspace this document belongs to.
