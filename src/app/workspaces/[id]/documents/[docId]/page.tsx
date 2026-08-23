@@ -12,7 +12,7 @@ export default async function DocumentPage({
 
   const { data: document } = await supabase
     .from("documents")
-    .select("id, title, yjs_state")
+    .select("id, title")
     .eq("id", docId)
     .single();
 
@@ -20,11 +20,5 @@ export default async function DocumentPage({
     redirect(`/workspaces/${id}`);
   }
 
-  return (
-    <DocumentEditor
-      documentId={document.id}
-      title={document.title}
-      initialState={document.yjs_state}
-    />
-  );
+  return <DocumentEditor documentId={document.id} title={document.title} />;
 }
