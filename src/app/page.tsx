@@ -31,7 +31,11 @@ export default async function Home() {
       </div>
       <ul className="flex flex-col gap-2">
         {workspaces?.map((workspace) => (
-          <li key={workspace.id}>{workspace.name}</li>
+          <li key={workspace.id}>
+            <Link href={`/workspaces/${workspace.id}`} className="underline">
+              {workspace.name}
+            </Link>
+          </li>
         ))}
         {workspaces?.length === 0 && (
           <p className="text-sm text-zinc-500">아직 워크스페이스가 없습니다.</p>
