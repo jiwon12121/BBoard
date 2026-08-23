@@ -1,38 +1,27 @@
-"use client";
-
-import { createClient } from "@/lib/supabase/client";
-import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { LoginCard } from "./login-card";
 
-function LoginButton() {
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const handleGoogleLogin = async () => {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-      },
-    });
-  };
+  if (user) {
+    redirect(next && next.startsWith("/") ? next : "/");
+  }
 
   return (
-    <button
-      onClick={handleGoogleLogin}
-      className="rounded-md bg-black px-4 py-2 text-white"
-    >
-      Google로 로그인
-    </button>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex flex-1 items-center justify-center px-4">
       <Suspense fallback={null}>
-        <LoginButton />
+        <LoginCard />
       </Suspense>
     </div>
   );
