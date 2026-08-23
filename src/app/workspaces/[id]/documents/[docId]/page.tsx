@@ -10,19 +10,19 @@ export default async function DocumentPage({
   const { id, docId } = await params;
   const supabase = await createClient();
 
-  const { data: document } = await supabase
-    .from("documents")
-    .select("id, title")
-    .eq("id", docId)
-    .single();
+  const [
+    { data: document },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase.from("documents").select("id, title").eq("id", docId).single(),
+    supabase.auth.getUser(),
+  ]);
 
   if (!document) {
     redirect(`/workspaces/${id}`);
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   return (
     <DocumentEditor

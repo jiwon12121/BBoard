@@ -10,26 +10,31 @@ export default async function WorkspacePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id, name, owner_id")
-    .eq("id", id)
-    .single();
+  const [
+    { data: workspace },
+    {
+      data: { user },
+    },
+    { data: documents },
+  ] = await Promise.all([
+    supabase
+      .from("workspaces")
+      .select("id, name, owner_id")
+      .eq("id", id)
+      .single(),
+    supabase.auth.getUser(),
+    supabase
+      .from("documents")
+      .select("id, title")
+      .eq("workspace_id", id)
+      .order("updated_at", { ascending: false }),
+  ]);
 
   if (!workspace) {
     redirect("/");
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   const isOwner = user?.id === workspace.owner_id;
-
-  const { data: documents } = await supabase
-    .from("documents")
-    .select("id, title")
-    .eq("workspace_id", id)
-    .order("updated_at", { ascending: false });
 
   const { data: latestInvite } = isOwner
     ? await supabase
