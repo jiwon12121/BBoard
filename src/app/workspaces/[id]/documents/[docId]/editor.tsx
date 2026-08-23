@@ -6,6 +6,7 @@ import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import useYProvider from "y-partyserver/react";
+import { Toolbar } from "./toolbar";
 
 const CURSOR_COLORS = [
   "#f783ac",
@@ -68,10 +69,13 @@ export function DocumentEditor({
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-8">
       <h1 className="text-xl font-semibold">{title}</h1>
-      <EditorContent
-        editor={editor}
-        className="min-h-[400px] rounded-md border border-zinc-300 p-4"
-      />
+      <div>
+        <Toolbar editor={editor} />
+        <EditorContent
+          editor={editor}
+          className="min-h-[400px] rounded-b-md border border-zinc-300 p-4"
+        />
+      </div>
     </div>
   );
 }
