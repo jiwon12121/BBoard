@@ -20,5 +20,16 @@ export default async function DocumentPage({
     redirect(`/workspaces/${id}`);
   }
 
-  return <DocumentEditor documentId={document.id} title={document.title} />;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return (
+    <DocumentEditor
+      documentId={document.id}
+      title={document.title}
+      userId={user!.id}
+      userName={user!.email ?? "익명"}
+    />
+  );
 }
