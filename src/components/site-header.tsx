@@ -1,12 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { getCachedUser } from "@/lib/supabase/get-user";
 import Link from "next/link";
 import { LogoutButton } from "./logout-button";
 
 export async function SiteHeader() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   return (
     <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
