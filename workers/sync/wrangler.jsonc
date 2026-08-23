@@ -1,0 +1,17 @@
+{
+  "name": "bboard-sync",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "durable_objects": {
+    "bindings": [
+      { "name": "DocumentSync", "class_name": "DocumentSync" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["DocumentSync"] }
+  ],
+  "vars": {
+    "SUPABASE_URL": "https://bywdmnhxcpfrsqplewuj.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_iiKy_03OoHHkd65mrXIPPg_yCawMcWK"
+  }
+}
