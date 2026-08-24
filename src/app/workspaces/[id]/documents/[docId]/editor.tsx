@@ -82,7 +82,7 @@ export function DocumentEditor({
 
   return (
     <div className="p-8">
-      <ResizableColumn>
+      <ResizableColumn documentId={documentId}>
         <div className="flex flex-col gap-4">
           <TitleEditor title={title} renameAction={renameAction} />
           <div className="relative">

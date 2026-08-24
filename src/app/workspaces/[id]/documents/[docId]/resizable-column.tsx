@@ -5,21 +5,28 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 const DEFAULT_WIDTH = 896;
 const MIN_WIDTH = 480;
 const MAX_WIDTH = 1400;
-const STORAGE_KEY = "bboard:document-width";
 
-export function ResizableColumn({ children }: { children: ReactNode }) {
+export function ResizableColumn({
+  documentId,
+  children,
+}: {
+  documentId: string;
+  children: ReactNode;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [dragging, setDragging] = useState(false);
+  const storageKey = `bboard:document-width:${documentId}`;
 
   useEffect(() => {
     try {
-      const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored) setWidth(Number(stored));
+      const stored = window.localStorage.getItem(storageKey);
+      setWidth(stored ? Number(stored) : DEFAULT_WIDTH);
     } catch {
       // localStorage unavailable — fall back to the default width.
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documentId]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -39,7 +46,7 @@ export function ResizableColumn({ children }: { children: ReactNode }) {
       document.body.style.userSelect = "";
       setWidth((w) => {
         try {
-          window.localStorage.setItem(STORAGE_KEY, String(w));
+          window.localStorage.setItem(storageKey, String(w));
         } catch {
           // ignore
         }
