@@ -19,7 +19,11 @@ export default async function DocumentPage({
       data: { session },
     },
   ] = await Promise.all([
-    supabase.from("documents").select("id, title").eq("id", docId).single(),
+    supabase
+      .from("documents")
+      .select("id, title, width")
+      .eq("id", docId)
+      .single(),
     getCachedUser(),
     supabase.auth.getSession(),
   ]);
@@ -43,14 +47,22 @@ export default async function DocumentPage({
     redirect(`/workspaces/${id}/documents/${docId}`);
   }
 
+  async function updateWidth(width: number) {
+    "use server";
+    const supabase = await createClient();
+    await supabase.from("documents").update({ width }).eq("id", docId);
+  }
+
   return (
     <DocumentEditor
       documentId={document.id}
       title={document.title}
+      width={document.width}
       userId={user!.id}
       userName={user!.user_metadata?.full_name ?? user!.email ?? "익명"}
       accessToken={session?.access_token ?? ""}
       renameAction={renameDocument}
+      updateWidthAction={updateWidth}
     />
   );
 }
