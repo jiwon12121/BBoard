@@ -30,7 +30,7 @@ function colorForUser(userId: string) {
 export function DocumentEditor({
   documentId,
   title,
-  width,
+  width: initialWidth,
   userId,
   userName,
   accessToken,
@@ -69,6 +69,33 @@ export function DocumentEditor({
     };
   }, [provider]);
 
+  const [width, setWidth] = useState(initialWidth);
+
+  useEffect(() => {
+    const handleCustomMessage = (message: string) => {
+      try {
+        const data = JSON.parse(message) as { type?: string; width?: number };
+        if (data.type === "width-change" && typeof data.width === "number") {
+          setWidth(data.width);
+        }
+      } catch {
+        // ignore malformed messages
+      }
+    };
+    provider.on("custom-message", handleCustomMessage);
+    return () => {
+      provider.off("custom-message", handleCustomMessage);
+    };
+  }, [provider]);
+
+  const handleWidthChange = (newWidth: number) => {
+    setWidth(newWidth);
+    updateWidthAction(newWidth);
+    provider.sendMessage(
+      JSON.stringify({ type: "width-change", width: newWidth }),
+    );
+  };
+
   const editor = useEditor(
     {
       immediatelyRender: false,
@@ -86,7 +113,7 @@ export function DocumentEditor({
 
   return (
     <div className="p-8">
-      <ResizableColumn width={width} onWidthChange={updateWidthAction}>
+      <ResizableColumn width={width} onWidthChange={handleWidthChange}>
         <div className="flex flex-col gap-4">
           <TitleEditor title={title} renameAction={renameAction} />
           <div className="relative">

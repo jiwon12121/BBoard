@@ -1,4 +1,4 @@
-import { routePartykitRequest } from "partyserver";
+import { routePartykitRequest, type Connection } from "partyserver";
 import { YServer } from "y-partyserver";
 import * as Y from "yjs";
 
@@ -68,6 +68,20 @@ export class DocumentSync extends YServer {
       },
       body: JSON.stringify({ yjs_state: state }),
     });
+  }
+
+  // Room-local broadcast only — not persisted here. The sender already
+  // wrote the value to Supabase itself; this just relays it live to the
+  // other clients currently viewing the same document.
+  onCustomMessage(connection: Connection, message: string) {
+    try {
+      const data = JSON.parse(message) as { type?: string };
+      if (data.type === "width-change") {
+        this.broadcastCustomMessage(message, connection);
+      }
+    } catch {
+      // ignore malformed messages
+    }
   }
 }
 
