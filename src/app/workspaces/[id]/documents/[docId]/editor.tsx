@@ -7,6 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useState } from "react";
 import useYProvider from "y-partyserver/react";
 import { Toolbar } from "./toolbar";
+import { TitleEditor } from "./title-editor";
 
 const CURSOR_COLORS = [
   "#f783ac",
@@ -31,12 +32,14 @@ export function DocumentEditor({
   userId,
   userName,
   accessToken,
+  renameAction,
 }: {
   documentId: string;
   title: string;
   userId: string;
   userName: string;
   accessToken: string;
+  renameAction: (formData: FormData) => void;
 }) {
   const provider = useYProvider({
     host: process.env.NEXT_PUBLIC_SYNC_SERVER_URL ?? "localhost:8787",
@@ -78,7 +81,7 @@ export function DocumentEditor({
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-8">
-      <h1 className="text-xl font-semibold">{title}</h1>
+      <TitleEditor title={title} renameAction={renameAction} />
       <div>
         <Toolbar editor={editor} />
         <div className="relative">

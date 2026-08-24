@@ -27,6 +27,20 @@ export default async function DocumentPage({
     redirect(`/workspaces/${id}`);
   }
 
+  async function renameDocument(formData: FormData) {
+    "use server";
+    const title = formData.get("title");
+    if (typeof title !== "string" || !title.trim()) return;
+
+    const supabase = await createClient();
+    await supabase
+      .from("documents")
+      .update({ title: title.trim() })
+      .eq("id", docId);
+
+    redirect(`/workspaces/${id}/documents/${docId}`);
+  }
+
   return (
     <DocumentEditor
       documentId={document.id}
@@ -34,6 +48,7 @@ export default async function DocumentPage({
       userId={user!.id}
       userName={user!.email ?? "익명"}
       accessToken={session?.access_token ?? ""}
+      renameAction={renameDocument}
     />
   );
 }
