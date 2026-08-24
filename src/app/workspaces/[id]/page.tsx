@@ -33,15 +33,36 @@ export default async function WorkspacePage({
 
   const isOwner = user?.id === workspace.owner_id;
 
-  const { data: latestInvite } = isOwner
+  const [{ data: latestInvite }, { data: memberRows }] = isOwner
+    ? await Promise.all([
+        supabase
+          .from("workspace_invites")
+          .select("token, role")
+          .eq("workspace_id", id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("workspace_members")
+          .select("user_id, role")
+          .eq("workspace_id", id),
+      ])
+    : [{ data: null }, { data: null }];
+
+  const { data: memberProfiles } = memberRows?.length
     ? await supabase
-        .from("workspace_invites")
-        .select("token, role")
-        .eq("workspace_id", id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
+        .from("profiles")
+        .select("id, email")
+        .in(
+          "id",
+          memberRows.map((m) => m.user_id),
+        )
     : { data: null };
+
+  const members = memberRows?.map((member) => ({
+    ...member,
+    email: memberProfiles?.find((p) => p.id === member.user_id)?.email,
+  }));
 
   async function createDocument() {
     "use server";
@@ -59,6 +80,21 @@ export default async function WorkspacePage({
     if (error || !data) return;
 
     redirect(`/workspaces/${id}/documents/${data.id}`);
+  }
+
+  async function removeMember(formData: FormData) {
+    "use server";
+    const userId = formData.get("userId");
+    if (typeof userId !== "string") return;
+
+    const supabase = await createClient();
+    await supabase
+      .from("workspace_members")
+      .delete()
+      .eq("workspace_id", id)
+      .eq("user_id", userId);
+
+    redirect(`/workspaces/${id}`);
   }
 
   async function createInvite(formData: FormData) {
@@ -106,6 +142,36 @@ export default async function WorkspacePage({
           <p className="text-sm text-zinc-500">문서가 없습니다.</p>
         )}
       </ul>
+
+      {isOwner && (
+        <div className="flex flex-col gap-2 border-t border-zinc-200 pt-4">
+          <h2 className="text-sm font-semibold">멤버</h2>
+          <ul className="flex flex-col gap-1">
+            {members?.map((member) => (
+              <li
+                key={member.user_id}
+                className="flex items-center justify-between text-sm"
+              >
+                <span>
+                  {member.email ?? member.user_id}{" "}
+                  <span className="text-zinc-400">({member.role})</span>
+                </span>
+                {member.user_id !== workspace.owner_id && (
+                  <form action={removeMember}>
+                    <input type="hidden" name="userId" value={member.user_id} />
+                    <button
+                      type="submit"
+                      className="text-xs text-red-600 underline"
+                    >
+                      제거
+                    </button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {isOwner && (
         <div className="flex flex-col gap-2 border-t border-zinc-200 pt-4">
