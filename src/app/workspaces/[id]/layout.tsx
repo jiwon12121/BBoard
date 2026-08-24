@@ -2,9 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCachedUser } from "@/lib/supabase/get-user";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { LogoutButton } from "@/components/logout-button";
 import { DeleteDocumentButton } from "./delete-document-button";
+import { DocumentLink } from "./document-link";
 import { MemberModal } from "./member-modal";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
@@ -178,20 +178,19 @@ export default async function WorkspaceLayout({
 
           <ul className="flex flex-col gap-1">
             {documents?.map((doc) => (
-              <li key={doc.id} className="flex items-center justify-between">
-                <Link
-                  href={`/workspaces/${id}/documents/${doc.id}`}
-                  className="truncate text-sm underline"
-                >
-                  {doc.title}
-                </Link>
-                {isOwner && (
-                  <DeleteDocumentButton
-                    docId={doc.id}
-                    deleteAction={deleteDocument}
-                  />
-                )}
-              </li>
+              <DocumentLink
+                key={doc.id}
+                href={`/workspaces/${id}/documents/${doc.id}`}
+                title={doc.title}
+                actions={
+                  isOwner && (
+                    <DeleteDocumentButton
+                      docId={doc.id}
+                      deleteAction={deleteDocument}
+                    />
+                  )
+                }
+              />
             ))}
             {documents?.length === 0 && (
               <p className="text-sm text-zinc-500">문서가 없습니다.</p>
