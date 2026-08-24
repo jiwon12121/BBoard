@@ -6,6 +6,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useState } from "react";
 import useYProvider from "y-partyserver/react";
+import { ResizableColumn } from "./resizable-column";
 import { Toolbar } from "./toolbar";
 import { TitleEditor } from "./title-editor";
 
@@ -80,22 +81,26 @@ export function DocumentEditor({
   );
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 p-8">
-      <TitleEditor title={title} renameAction={renameAction} />
-      <div className="relative">
-        <div className="absolute left-2 top-2 z-10">
-          <Toolbar editor={editor} />
-        </div>
-        <EditorContent
-          editor={editor}
-          className="min-h-[400px] p-4 pt-12"
-        />
-        {!synced && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-950/80">
-            <span className="text-sm text-zinc-500">불러오는 중...</span>
+    <div className="p-8">
+      <ResizableColumn>
+        <div className="flex flex-col gap-4">
+          <TitleEditor title={title} renameAction={renameAction} />
+          <div className="relative">
+            <div className="absolute left-2 top-2 z-10">
+              <Toolbar editor={editor} />
+            </div>
+            <EditorContent
+              editor={editor}
+              className="min-h-[400px] p-4 pt-12"
+            />
+            {!synced && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-950/80">
+                <span className="text-sm text-zinc-500">불러오는 중...</span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      </ResizableColumn>
     </div>
   );
 }
