@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCachedUser } from "@/lib/supabase/get-user";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { DocumentEditor } from "./editor";
 
@@ -38,6 +39,7 @@ export default async function DocumentPage({
       .update({ title: title.trim() })
       .eq("id", docId);
 
+    revalidatePath(`/workspaces/${id}`, "layout");
     redirect(`/workspaces/${id}/documents/${docId}`);
   }
 

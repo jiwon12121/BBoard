@@ -80,7 +80,7 @@ export function DocumentEditor({
   );
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-8">
+    <div className="mx-auto flex max-w-2xl flex-col gap-4 p-8">
       <TitleEditor title={title} renameAction={renameAction} />
       <div>
         <Toolbar editor={editor} />

@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCachedUser } from "@/lib/supabase/get-user";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 
 export default async function Home() {
   const user = await getCachedUser();
-  const supabase = await createClient();
 
   if (!user) {
     return (
@@ -16,30 +16,12 @@ export default async function Home() {
     );
   }
 
+  const supabase = await createClient();
   const { data: workspaces } = await supabase
     .from("workspaces")
-    .select("id, name");
+    .select("id")
+    .order("created_at", { ascending: true })
+    .limit(1);
 
-  return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col gap-4 p-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">워크스페이스</h1>
-        <Link href="/workspaces/new" className="underline">
-          + 새로 만들기
-        </Link>
-      </div>
-      <ul className="flex flex-col gap-2">
-        {workspaces?.map((workspace) => (
-          <li key={workspace.id}>
-            <Link href={`/workspaces/${workspace.id}`} className="underline">
-              {workspace.name}
-            </Link>
-          </li>
-        ))}
-        {workspaces?.length === 0 && (
-          <p className="text-sm text-zinc-500">아직 워크스페이스가 없습니다.</p>
-        )}
-      </ul>
-    </div>
-  );
+  redirect(workspaces?.[0] ? `/workspaces/${workspaces[0].id}` : "/workspaces/new");
 }
