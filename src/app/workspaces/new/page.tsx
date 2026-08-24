@@ -13,15 +13,14 @@ export default function NewWorkspacePage() {
     e.preventDefault();
     setError(null);
     const supabase = createClient();
-    const { error } = await supabase.rpc("create_workspace", {
+    const { data, error } = await supabase.rpc("create_workspace", {
       workspace_name: name,
     });
-    if (error) {
-      setError(error.message);
+    if (error || !data) {
+      setError(error?.message ?? "워크스페이스를 만들지 못했습니다.");
       return;
     }
-    router.push("/");
-    router.refresh();
+    router.push(`/workspaces/${data}`);
   };
 
   return (
