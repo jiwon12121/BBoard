@@ -7,26 +7,18 @@ const MIN_WIDTH = 480;
 const MAX_WIDTH = 1400;
 
 export function ResizableColumn({
-  documentId,
+  width,
+  onWidthChange,
   children,
 }: {
-  documentId: string;
+  width: number | null;
+  onWidthChange: (width: number) => void;
   children: ReactNode;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [localWidth, setLocalWidth] = useState(width ?? DEFAULT_WIDTH);
+  const latestWidthRef = useRef(localWidth);
   const [dragging, setDragging] = useState(false);
-  const storageKey = `bboard:document-width:${documentId}`;
-
-  useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem(storageKey);
-      setWidth(stored ? Number(stored) : DEFAULT_WIDTH);
-    } catch {
-      // localStorage unavailable — fall back to the default width.
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [documentId]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -37,21 +29,18 @@ export function ResizableColumn({
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
       const centerX = rect.left + rect.width / 2;
-      const newWidth = Math.abs(e.clientX - centerX) * 2;
-      setWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, newWidth)));
+      const newWidth = Math.min(
+        MAX_WIDTH,
+        Math.max(MIN_WIDTH, Math.abs(e.clientX - centerX) * 2),
+      );
+      latestWidthRef.current = newWidth;
+      setLocalWidth(newWidth);
     };
 
     const handleMouseUp = () => {
       setDragging(false);
       document.body.style.userSelect = "";
-      setWidth((w) => {
-        try {
-          window.localStorage.setItem(storageKey, String(w));
-        } catch {
-          // ignore
-        }
-        return w;
-      });
+      onWidthChange(Math.round(latestWidthRef.current));
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -61,13 +50,13 @@ export function ResizableColumn({
       window.removeEventListener("mouseup", handleMouseUp);
       document.body.style.userSelect = "";
     };
-  }, [dragging]);
+  }, [dragging, onWidthChange]);
 
   return (
     <div
       ref={containerRef}
       className="relative mx-auto"
-      style={{ maxWidth: width }}
+      style={{ maxWidth: localWidth }}
     >
       {children}
       <button

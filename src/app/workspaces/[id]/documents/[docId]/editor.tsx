@@ -30,17 +30,21 @@ function colorForUser(userId: string) {
 export function DocumentEditor({
   documentId,
   title,
+  width,
   userId,
   userName,
   accessToken,
   renameAction,
+  updateWidthAction,
 }: {
   documentId: string;
   title: string;
+  width: number | null;
   userId: string;
   userName: string;
   accessToken: string;
   renameAction: (formData: FormData) => void;
+  updateWidthAction: (width: number) => void;
 }) {
   const provider = useYProvider({
     host: process.env.NEXT_PUBLIC_SYNC_SERVER_URL ?? "localhost:8787",
@@ -82,7 +86,7 @@ export function DocumentEditor({
 
   return (
     <div className="p-8">
-      <ResizableColumn documentId={documentId}>
+      <ResizableColumn width={width} onWidthChange={updateWidthAction}>
         <div className="flex flex-col gap-4">
           <TitleEditor title={title} renameAction={renameAction} />
           <div className="relative">
