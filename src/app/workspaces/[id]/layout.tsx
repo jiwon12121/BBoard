@@ -3,6 +3,7 @@ import { getCachedUser } from "@/lib/supabase/get-user";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { LogoutButton } from "@/components/logout-button";
 import { DeleteDocumentButton } from "./delete-document-button";
 import { MemberModal } from "./member-modal";
 import { WorkspaceSwitcher } from "./workspace-switcher";
@@ -140,52 +141,66 @@ export default async function WorkspaceLayout({
 
   return (
     <div className="flex flex-1">
-      <aside className="flex w-64 shrink-0 flex-col gap-4 overflow-y-auto border-r border-zinc-200 p-4 dark:border-zinc-800">
-        <div className="flex items-center justify-between">
-          <WorkspaceSwitcher
-            currentName={workspace.name}
-            currentId={id}
-            workspaces={allWorkspaces ?? []}
-          />
-          {isOwner && (
-            <MemberModal
-              members={members}
-              ownerId={workspace.owner_id}
-              inviteUrl={inviteUrl}
-              inviteRole={latestInvite?.role}
-              removeMemberAction={removeMember}
-              createInviteAction={createInvite}
-            />
-          )}
-        </div>
-
-        <form action={createDocument}>
-          <button type="submit" className="text-sm underline">
-            + 새 문서
-          </button>
-        </form>
-
-        <ul className="flex flex-col gap-1">
-          {documents?.map((doc) => (
-            <li key={doc.id} className="flex items-center justify-between">
-              <Link
-                href={`/workspaces/${id}/documents/${doc.id}`}
-                className="truncate text-sm underline"
-              >
-                {doc.title}
-              </Link>
+      <aside className="flex w-64 shrink-0 flex-col border-r border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-semibold tracking-wide text-zinc-400">
+              BBoard
+            </span>
+            <div className="flex items-center justify-between">
+              <WorkspaceSwitcher
+                currentName={workspace.name}
+                currentId={id}
+                workspaces={allWorkspaces ?? []}
+              />
               {isOwner && (
-                <DeleteDocumentButton
-                  docId={doc.id}
-                  deleteAction={deleteDocument}
+                <MemberModal
+                  members={members}
+                  ownerId={workspace.owner_id}
+                  inviteUrl={inviteUrl}
+                  inviteRole={latestInvite?.role}
+                  removeMemberAction={removeMember}
+                  createInviteAction={createInvite}
                 />
               )}
-            </li>
-          ))}
-          {documents?.length === 0 && (
-            <p className="text-sm text-zinc-500">문서가 없습니다.</p>
-          )}
-        </ul>
+            </div>
+          </div>
+
+          <form action={createDocument}>
+            <button type="submit" className="text-sm underline">
+              + 새 문서
+            </button>
+          </form>
+
+          <ul className="flex flex-col gap-1">
+            {documents?.map((doc) => (
+              <li key={doc.id} className="flex items-center justify-between">
+                <Link
+                  href={`/workspaces/${id}/documents/${doc.id}`}
+                  className="truncate text-sm underline"
+                >
+                  {doc.title}
+                </Link>
+                {isOwner && (
+                  <DeleteDocumentButton
+                    docId={doc.id}
+                    deleteAction={deleteDocument}
+                  />
+                )}
+              </li>
+            ))}
+            {documents?.length === 0 && (
+              <p className="text-sm text-zinc-500">문서가 없습니다.</p>
+            )}
+          </ul>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 border-t border-zinc-200 p-4 dark:border-zinc-800">
+          <span className="truncate text-xs text-zinc-500">
+            {user?.email}
+          </span>
+          <LogoutButton />
+        </div>
       </aside>
       <main className="flex-1 overflow-y-auto">{children}</main>
     </div>
