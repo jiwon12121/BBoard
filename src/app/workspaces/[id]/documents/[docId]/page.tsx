@@ -48,7 +48,7 @@ export default async function DocumentPage({
       documentId={document.id}
       title={document.title}
       userId={user!.id}
-      userName={user!.email ?? "익명"}
+      userName={user!.user_metadata?.full_name ?? user!.email ?? "익명"}
       accessToken={session?.access_token ?? ""}
       renameAction={renameDocument}
     />
