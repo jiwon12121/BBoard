@@ -11,9 +11,16 @@ export default async function DocumentPage({
   const { id, docId } = await params;
   const supabase = await createClient();
 
-  const [{ data: document }, user] = await Promise.all([
+  const [
+    { data: document },
+    user,
+    {
+      data: { session },
+    },
+  ] = await Promise.all([
     supabase.from("documents").select("id, title").eq("id", docId).single(),
     getCachedUser(),
+    supabase.auth.getSession(),
   ]);
 
   if (!document) {
@@ -26,6 +33,7 @@ export default async function DocumentPage({
       title={document.title}
       userId={user!.id}
       userName={user!.email ?? "익명"}
+      accessToken={session?.access_token ?? ""}
     />
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -30,24 +29,23 @@ export function DocumentEditor({
   title,
   userId,
   userName,
+  accessToken,
 }: {
   documentId: string;
   title: string;
   userId: string;
   userName: string;
+  accessToken: string;
 }) {
   const provider = useYProvider({
     host: process.env.NEXT_PUBLIC_SYNC_SERVER_URL ?? "localhost:8787",
     party: "document-sync",
     room: documentId,
     options: {
-      params: async () => {
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        return { token: session?.access_token ?? "" };
-      },
+      // Known server-side already — skip a client-side Supabase round trip
+      // that would otherwise block the WebSocket from opening at all
+      // (the provider awaits params() before connecting).
+      params: { token: accessToken },
     },
   });
 
