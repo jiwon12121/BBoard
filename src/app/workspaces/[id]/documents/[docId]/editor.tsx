@@ -4,6 +4,7 @@ import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { useEffect, useState } from "react";
 import useYProvider from "y-partyserver/react";
 import { Toolbar } from "./toolbar";
 
@@ -49,6 +50,17 @@ export function DocumentEditor({
     },
   });
 
+  const [synced, setSynced] = useState(false);
+
+  useEffect(() => {
+    setSynced(provider.synced);
+    const handleSynced = (isSynced: boolean) => setSynced(isSynced);
+    provider.on("synced", handleSynced);
+    return () => {
+      provider.off("synced", handleSynced);
+    };
+  }, [provider]);
+
   const editor = useEditor(
     {
       immediatelyRender: false,
@@ -69,10 +81,17 @@ export function DocumentEditor({
       <h1 className="text-xl font-semibold">{title}</h1>
       <div>
         <Toolbar editor={editor} />
-        <EditorContent
-          editor={editor}
-          className="min-h-[400px] rounded-b-md border border-zinc-300 p-4"
-        />
+        <div className="relative">
+          <EditorContent
+            editor={editor}
+            className="min-h-[400px] rounded-b-md border border-zinc-300 p-4"
+          />
+          {!synced && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-b-md bg-white/80 dark:bg-zinc-950/80">
+              <span className="text-sm text-zinc-500">불러오는 중...</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
