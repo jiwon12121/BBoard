@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCachedUser } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { DeleteDocumentButton } from "./delete-document-button";
 
 export default async function WorkspacePage({
   params,
@@ -82,6 +83,17 @@ export default async function WorkspacePage({
     redirect(`/workspaces/${id}/documents/${data.id}`);
   }
 
+  async function deleteDocument(formData: FormData) {
+    "use server";
+    const docId = formData.get("docId");
+    if (typeof docId !== "string") return;
+
+    const supabase = await createClient();
+    await supabase.from("documents").delete().eq("id", docId);
+
+    redirect(`/workspaces/${id}`);
+  }
+
   async function removeMember(formData: FormData) {
     "use server";
     const userId = formData.get("userId");
@@ -129,13 +141,16 @@ export default async function WorkspacePage({
       </div>
       <ul className="flex flex-col gap-2">
         {documents?.map((doc) => (
-          <li key={doc.id}>
+          <li key={doc.id} className="flex items-center justify-between">
             <Link
               href={`/workspaces/${id}/documents/${doc.id}`}
               className="underline"
             >
               {doc.title}
             </Link>
+            {isOwner && (
+              <DeleteDocumentButton docId={doc.id} deleteAction={deleteDocument} />
+            )}
           </li>
         ))}
         {documents?.length === 0 && (
