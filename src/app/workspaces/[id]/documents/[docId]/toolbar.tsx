@@ -1,6 +1,7 @@
 "use client";
 
 import { type Editor } from "@tiptap/react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 
 function ToolbarButton({
@@ -20,7 +21,7 @@ function ToolbarButton({
       onClick={onClick}
       aria-label={label}
       aria-pressed={active}
-      className={`rounded px-2 py-1 text-sm font-medium ${
+      className={`rounded px-2 py-1 text-left text-sm font-medium ${
         active
           ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
           : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -32,96 +33,129 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <div className="mx-1 h-5 w-px bg-zinc-300 dark:bg-zinc-700" />;
+  return <div className="my-1 h-px w-full bg-zinc-200 dark:bg-zinc-800" />;
 }
 
 export function Toolbar({ editor }: { editor: Editor | null }) {
+  const [open, setOpen] = useState(false);
+
   if (!editor) return null;
 
+  const run = (command: () => void) => () => {
+    command();
+    setOpen(false);
+  };
+
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-t-md border border-b-0 border-zinc-300 bg-zinc-50 p-1 dark:border-zinc-700 dark:bg-zinc-900">
-      <ToolbarButton
-        label="굵게"
-        active={editor.isActive("bold")}
-        onClick={() => editor.chain().focus().toggleBold().run()}
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="서식"
+        className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
       >
-        <strong>B</strong>
-      </ToolbarButton>
-      <ToolbarButton
-        label="기울임"
-        active={editor.isActive("italic")}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-      >
-        <em>I</em>
-      </ToolbarButton>
-      <ToolbarButton
-        label="취소선"
-        active={editor.isActive("strike")}
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-      >
-        <span className="line-through">S</span>
-      </ToolbarButton>
+        Aa
+      </button>
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute left-0 top-full z-50 mt-1 flex w-36 flex-col gap-0.5 rounded-md border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+            <ToolbarButton
+              label="굵게"
+              active={editor.isActive("bold")}
+              onClick={run(() => editor.chain().focus().toggleBold().run())}
+            >
+              <strong>굵게</strong>
+            </ToolbarButton>
+            <ToolbarButton
+              label="기울임"
+              active={editor.isActive("italic")}
+              onClick={run(() => editor.chain().focus().toggleItalic().run())}
+            >
+              <em>기울임</em>
+            </ToolbarButton>
+            <ToolbarButton
+              label="취소선"
+              active={editor.isActive("strike")}
+              onClick={run(() => editor.chain().focus().toggleStrike().run())}
+            >
+              <span className="line-through">취소선</span>
+            </ToolbarButton>
 
-      <Divider />
+            <Divider />
 
-      <ToolbarButton
-        label="제목 1"
-        active={editor.isActive("heading", { level: 1 })}
-        onClick={() =>
-          editor.chain().focus().toggleHeading({ level: 1 }).run()
-        }
-      >
-        H1
-      </ToolbarButton>
-      <ToolbarButton
-        label="제목 2"
-        active={editor.isActive("heading", { level: 2 })}
-        onClick={() =>
-          editor.chain().focus().toggleHeading({ level: 2 }).run()
-        }
-      >
-        H2
-      </ToolbarButton>
-      <ToolbarButton
-        label="제목 3"
-        active={editor.isActive("heading", { level: 3 })}
-        onClick={() =>
-          editor.chain().focus().toggleHeading({ level: 3 }).run()
-        }
-      >
-        H3
-      </ToolbarButton>
+            <ToolbarButton
+              label="제목 1"
+              active={editor.isActive("heading", { level: 1 })}
+              onClick={run(() =>
+                editor.chain().focus().toggleHeading({ level: 1 }).run(),
+              )}
+            >
+              제목 1
+            </ToolbarButton>
+            <ToolbarButton
+              label="제목 2"
+              active={editor.isActive("heading", { level: 2 })}
+              onClick={run(() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run(),
+              )}
+            >
+              제목 2
+            </ToolbarButton>
+            <ToolbarButton
+              label="제목 3"
+              active={editor.isActive("heading", { level: 3 })}
+              onClick={run(() =>
+                editor.chain().focus().toggleHeading({ level: 3 }).run(),
+              )}
+            >
+              제목 3
+            </ToolbarButton>
 
-      <Divider />
+            <Divider />
 
-      <ToolbarButton
-        label="글머리 목록"
-        active={editor.isActive("bulletList")}
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-      >
-        목록
-      </ToolbarButton>
-      <ToolbarButton
-        label="번호 목록"
-        active={editor.isActive("orderedList")}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-      >
-        1. 목록
-      </ToolbarButton>
-      <ToolbarButton
-        label="인용"
-        active={editor.isActive("blockquote")}
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-      >
-        인용
-      </ToolbarButton>
-      <ToolbarButton
-        label="코드 블록"
-        active={editor.isActive("codeBlock")}
-        onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-      >
-        {"</>"}
-      </ToolbarButton>
+            <ToolbarButton
+              label="글머리 목록"
+              active={editor.isActive("bulletList")}
+              onClick={run(() =>
+                editor.chain().focus().toggleBulletList().run(),
+              )}
+            >
+              글머리 목록
+            </ToolbarButton>
+            <ToolbarButton
+              label="번호 목록"
+              active={editor.isActive("orderedList")}
+              onClick={run(() =>
+                editor.chain().focus().toggleOrderedList().run(),
+              )}
+            >
+              번호 목록
+            </ToolbarButton>
+            <ToolbarButton
+              label="인용"
+              active={editor.isActive("blockquote")}
+              onClick={run(() =>
+                editor.chain().focus().toggleBlockquote().run(),
+              )}
+            >
+              인용
+            </ToolbarButton>
+            <ToolbarButton
+              label="코드 블록"
+              active={editor.isActive("codeBlock")}
+              onClick={run(() =>
+                editor.chain().focus().toggleCodeBlock().run(),
+              )}
+            >
+              코드 블록
+            </ToolbarButton>
+          </div>
+        </>
+      )}
     </div>
   );
 }

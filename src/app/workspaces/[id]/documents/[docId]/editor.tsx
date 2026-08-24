@@ -82,19 +82,19 @@ export function DocumentEditor({
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4 p-8">
       <TitleEditor title={title} renameAction={renameAction} />
-      <div>
-        <Toolbar editor={editor} />
-        <div className="relative">
-          <EditorContent
-            editor={editor}
-            className="min-h-[400px] rounded-b-md border border-zinc-300 p-4"
-          />
-          {!synced && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-b-md bg-white/80 dark:bg-zinc-950/80">
-              <span className="text-sm text-zinc-500">불러오는 중...</span>
-            </div>
-          )}
+      <div className="relative">
+        <div className="absolute left-2 top-2 z-10">
+          <Toolbar editor={editor} />
         </div>
+        <EditorContent
+          editor={editor}
+          className="min-h-[400px] p-4 pt-12"
+        />
+        {!synced && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-950/80">
+            <span className="text-sm text-zinc-500">불러오는 중...</span>
+          </div>
+        )}
       </div>
     </div>
   );
