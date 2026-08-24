@@ -21,6 +21,11 @@ export function ResizableColumn({
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
+    if (dragging) return;
+    setLocalWidth(width ?? DEFAULT_WIDTH);
+  }, [width, dragging]);
+
+  useEffect(() => {
     if (!dragging) return;
 
     document.body.style.userSelect = "none";
