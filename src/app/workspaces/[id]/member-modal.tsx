@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 
-type Member = { user_id: string; role: string; email?: string };
+type Member = {
+  user_id: string;
+  role: string;
+  email?: string;
+  name?: string;
+};
 
 export function MemberModal({
   members,
@@ -55,7 +60,7 @@ export function MemberModal({
                   className="flex items-center justify-between text-sm"
                 >
                   <span>
-                    {member.email ?? member.user_id}{" "}
+                    {member.name ?? member.email ?? member.user_id}{" "}
                     <span className="text-zinc-400">({member.role})</span>
                   </span>
                   {member.user_id !== ownerId && (

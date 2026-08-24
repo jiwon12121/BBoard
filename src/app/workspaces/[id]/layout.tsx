@@ -59,17 +59,21 @@ export default async function WorkspaceLayout({
   const { data: memberProfiles } = memberRows?.length
     ? await supabase
         .from("profiles")
-        .select("id, email")
+        .select("id, email, name")
         .in(
           "id",
           memberRows.map((m) => m.user_id),
         )
     : { data: null };
 
-  const members = memberRows?.map((member) => ({
-    ...member,
-    email: memberProfiles?.find((p) => p.id === member.user_id)?.email,
-  }));
+  const members = memberRows?.map((member) => {
+    const profile = memberProfiles?.find((p) => p.id === member.user_id);
+    return {
+      ...member,
+      email: profile?.email,
+      name: profile?.name,
+    };
+  });
 
   async function createDocument() {
     "use server";
@@ -197,7 +201,7 @@ export default async function WorkspaceLayout({
 
         <div className="flex items-center justify-between gap-2 border-t border-zinc-200 p-4 dark:border-zinc-800">
           <span className="truncate text-xs text-zinc-500">
-            {user?.email}
+            {user?.user_metadata?.full_name ?? user?.email}
           </span>
           <LogoutButton />
         </div>
