@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 type Member = {
   user_id: string;
@@ -12,6 +14,10 @@ type Member = {
 export function MemberModal({
   members,
   ownerId,
+  isOwner,
+  workspaceId,
+  currentUserId,
+  currentUserName,
   inviteUrl,
   inviteRole,
   removeMemberAction,
@@ -19,12 +25,50 @@ export function MemberModal({
 }: {
   members: Member[] | undefined;
   ownerId: string;
+  isOwner: boolean;
+  workspaceId: string;
+  currentUserId: string;
+  currentUserName: string;
   inviteUrl: string | null;
   inviteRole: string | undefined;
   removeMemberAction: (formData: FormData) => void;
   createInviteAction: (formData: FormData) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const router = useRouter();
+
+  // Tracks this user's presence in the workspace regardless of role, so
+  // owners can see who else is around - not just members whose browser
+  // happens to have the member list UI open.
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase.channel(`workspace-presence:${workspaceId}`, {
+      config: { presence: { key: currentUserId } },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        setOnlineUserIds(new Set(Object.keys(channel.presenceState())));
+      })
+      .on("presence", { event: "join" }, () => {
+        // The member list itself (names/roles) comes from a server-rendered
+        // prop, so a newly-joined member won't show up there on their own -
+        // refresh to re-run the server fetch and pick them up.
+        if (isOwner) router.refresh();
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({ name: currentUserName });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [workspaceId, currentUserId, currentUserName, isOwner, router]);
+
+  if (!isOwner) return null;
 
   return (
     <>
@@ -59,7 +103,15 @@ export function MemberModal({
                   key={member.user_id}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${
+                        onlineUserIds.has(member.user_id)
+                          ? "bg-green-500"
+                          : "bg-zinc-300 dark:bg-zinc-700"
+                      }`}
+                      title={onlineUserIds.has(member.user_id) ? "온라인" : "오프라인"}
+                    />
                     {member.name ?? member.email ?? member.user_id}{" "}
                     <span className="text-zinc-400">({member.role})</span>
                   </span>

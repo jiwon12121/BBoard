@@ -157,10 +157,14 @@ export default async function WorkspaceLayout({
                 currentId={id}
                 workspaces={allWorkspaces ?? []}
               />
-              {isOwner && (
+              {user && (
                 <MemberModal
                   members={members}
                   ownerId={workspace.owner_id}
+                  isOwner={isOwner}
+                  workspaceId={id}
+                  currentUserId={user.id}
+                  currentUserName={user.user_metadata?.full_name ?? user.email ?? "익명"}
                   inviteUrl={inviteUrl}
                   inviteRole={latestInvite?.role}
                   removeMemberAction={removeMember}

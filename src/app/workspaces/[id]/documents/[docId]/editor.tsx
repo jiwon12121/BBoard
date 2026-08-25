@@ -99,6 +99,32 @@ export function DocumentEditor({
     };
   }, [provider]);
 
+  // Who's currently viewing/editing this document - read from the same Yjs
+  // awareness data CollaborationCaret uses for cursor colors, so no extra
+  // network channel is needed.
+  const [viewers, setViewers] = useState<
+    { clientId: number; name: string; color: string }[]
+  >([]);
+
+  useEffect(() => {
+    const updateViewers = () => {
+      const states = provider.awareness.getStates() as Map<
+        number,
+        { user?: { name: string; color: string } }
+      >;
+      const list: { clientId: number; name: string; color: string }[] = [];
+      states.forEach((state, clientId) => {
+        if (state.user) list.push({ clientId, ...state.user });
+      });
+      setViewers(list);
+    };
+    updateViewers();
+    provider.awareness.on("change", updateViewers);
+    return () => {
+      provider.awareness.off("change", updateViewers);
+    };
+  }, [provider]);
+
   const [width, setWidth] = useState(initialWidth);
 
   useEffect(() => {
@@ -202,6 +228,19 @@ export function DocumentEditor({
       <ResizableColumn width={width} onWidthChange={handleWidthChange}>
         <div className="flex flex-col gap-4">
           <TitleEditor title={title} renameAction={renameAction} />
+          {viewers.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1">
+              {viewers.map((viewer) => (
+                <span
+                  key={viewer.clientId}
+                  className="rounded-full px-2 py-0.5 text-xs text-white"
+                  style={{ backgroundColor: viewer.color }}
+                >
+                  {viewer.name}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="relative" onMouseMove={handleEditorMouseMove}>
             <div className="absolute left-2 top-2 z-10">
               <Toolbar editor={editor} />
