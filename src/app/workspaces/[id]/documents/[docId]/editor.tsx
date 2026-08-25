@@ -1,10 +1,12 @@
 "use client";
 
+import { offset } from "@floating-ui/dom";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
-import { EditorContent, useEditor } from "@tiptap/react";
+import DragHandle from "@tiptap/extension-drag-handle-react";
+import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useYProvider from "y-partyserver/react";
 import { ResizableColumn } from "./resizable-column";
 import { Toolbar } from "./toolbar";
@@ -25,6 +27,34 @@ function colorForUser(userId: string) {
     hash = (hash * 31 + userId.charCodeAt(i)) | 0;
   }
   return CURSOR_COLORS[Math.abs(hash) % CURSOR_COLORS.length];
+}
+
+function getFirstTextNode(node: Node): Text | null {
+  for (let i = 0; i < node.childNodes.length; i++) {
+    const child = node.childNodes[i];
+    if (child.nodeType === Node.TEXT_NODE && (child.textContent ?? "").trim().length > 0) {
+      return child as Text;
+    }
+    if (child.nodeType === Node.ELEMENT_NODE) {
+      const found = getFirstTextNode(child);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// The handle should align to the vertical center of the block's first
+// line, not the whole (possibly multi-line) block - so keep the block's
+// own left/width but swap in the first line's actual top/height.
+function getFirstLineRect(blockEl: HTMLElement): DOMRect {
+  const blockRect = blockEl.getBoundingClientRect();
+  const textNode = getFirstTextNode(blockEl);
+  if (!textNode) return blockRect;
+  const range = document.createRange();
+  range.selectNodeContents(textNode);
+  const lineRect = range.getClientRects()[0];
+  if (!lineRect) return blockRect;
+  return new DOMRect(blockRect.left, lineRect.top, blockRect.width, lineRect.height);
 }
 
 export function DocumentEditor({
@@ -111,19 +141,82 @@ export function DocumentEditor({
     [provider],
   );
 
+  // Only one drag handle should be visible at a time: left by default,
+  // right only in the last 10% of the hovered block's own row width (not
+  // based on where the text happens to end - short lines have a lot of
+  // empty space after the text, and that empty space is still part of
+  // the block, not "past" it).
+  // Which block is "hovered" is tracked via the drag handle plugin's own
+  // onNodeChange - it already does the edge-clamped hit-testing that makes
+  // the first/last block work correctly, so we reuse it instead of
+  // re-resolving the position ourselves (that duplicate logic is what
+  // caused the first block to behave differently before).
+  const [activeSide, setActiveSide] = useState<"left" | "right">("left");
+  const hoveredPosRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  const handleNodeChange = ({ pos }: { editor: Editor; node: unknown; pos: number }) => {
+    hoveredPosRef.current = pos >= 0 ? pos : null;
+  };
+
+  const handleEditorMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!editor || rafRef.current !== null) return;
+    const { clientX } = event;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (hoveredPosRef.current === null) return;
+      const dom = editor.view.nodeDOM(hoveredPosRef.current);
+      if (!(dom instanceof HTMLElement)) return;
+      const rect = dom.getBoundingClientRect();
+      const rightZoneStart = rect.left + rect.width * 0.9;
+      setActiveSide(clientX >= rightZoneStart ? "right" : "left");
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  const dragHandlePosition = useMemo(
+    () => ({
+      placement: activeSide === "left" ? ("left" as const) : ("right" as const),
+      // A little breathing room between the handle and the block - only
+      // needed on the left, where the handle otherwise sits flush against it.
+      middleware: activeSide === "left" ? [offset(6)] : undefined,
+    }),
+    [activeSide],
+  );
+
+  const getReferencedVirtualElement = () => {
+    if (!editor || hoveredPosRef.current === null) return null;
+    const dom = editor.view.nodeDOM(hoveredPosRef.current);
+    if (!(dom instanceof HTMLElement)) return null;
+    const rect = getFirstLineRect(dom);
+    return { getBoundingClientRect: () => rect };
+  };
+
   return (
     <div className="p-8">
       <ResizableColumn width={width} onWidthChange={handleWidthChange}>
         <div className="flex flex-col gap-4">
           <TitleEditor title={title} renameAction={renameAction} />
-          <div className="relative">
+          <div className="relative" onMouseMove={handleEditorMouseMove}>
             <div className="absolute left-2 top-2 z-10">
               <Toolbar editor={editor} />
             </div>
-            <EditorContent
-              editor={editor}
-              className="min-h-[400px] p-4 pt-12"
-            />
+            <EditorContent editor={editor} className="min-h-[400px] p-4" />
+            {editor && (
+              <DragHandle
+                editor={editor}
+                computePositionConfig={dragHandlePosition}
+                onNodeChange={handleNodeChange}
+                getReferencedVirtualElement={getReferencedVirtualElement}
+              >
+                {null}
+              </DragHandle>
+            )}
             {!synced && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-950/80">
                 <span className="text-sm text-zinc-500">불러오는 중...</span>
