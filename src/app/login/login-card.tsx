@@ -69,25 +69,25 @@ export function LoginCard() {
   };
 
   return (
-    <div className="w-full max-w-sm rounded-xl border border-zinc-200 p-8 dark:border-zinc-800">
+    <div className="w-full max-w-sm rounded-xl border border-border-ink bg-canvas p-8">
       <div className="mb-8 flex flex-col items-center gap-1 text-center">
-        <h1 className="text-xl font-semibold">BBoard 로그인</h1>
-        <p className="text-sm text-zinc-500">
+        <h1 className="text-xl font-semibold text-ink">BBoard 로그인</h1>
+        <p className="text-sm text-ink/50">
           팀과 함께 실시간으로 문서를 작성하세요
         </p>
       </div>
       <button
         onClick={handleGoogleLogin}
-        className="flex w-full items-center justify-center gap-3 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        className="flex w-full items-center justify-center gap-3 rounded-lg border border-border-ink bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-sidebar"
       >
         <GoogleIcon />
         Google로 계속하기
       </button>
 
       <div className="my-6 flex items-center gap-3">
-        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-        <span className="text-xs text-zinc-400">또는</span>
-        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        <div className="h-px flex-1 bg-border-ink" />
+        <span className="text-xs text-ink/40">또는</span>
+        <div className="h-px flex-1 bg-border-ink" />
       </div>
 
       <form onSubmit={handleGuestLogin} className="flex flex-col gap-2">
@@ -96,12 +96,12 @@ export function LoginCard() {
           onChange={(e) => setNickname(e.target.value)}
           placeholder="닉네임"
           required
-          className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 focus:border-zinc-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="w-full rounded-lg border border-border-ink bg-canvas px-3 py-2.5 text-sm text-ink focus:border-ink/40 focus:outline-none"
         />
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-zinc-100 px-4 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+          className="w-full rounded-lg bg-sidebar px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-border-ink disabled:opacity-50"
         >
           {loading ? "시작하는 중..." : "게스트로 시작하기"}
         </button>

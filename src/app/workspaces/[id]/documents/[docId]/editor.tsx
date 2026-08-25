@@ -12,14 +12,7 @@ import { ResizableColumn } from "./resizable-column";
 import { Toolbar } from "./toolbar";
 import { TitleEditor } from "./title-editor";
 
-const CURSOR_COLORS = [
-  "#f783ac",
-  "#f08c00",
-  "#2f9e44",
-  "#1971c2",
-  "#7048e8",
-  "#e8590c",
-];
+const CURSOR_COLORS = ["#676380", "#5f6b5c", "#8a6559", "#7c6a54", "#8a7548"];
 
 function colorForUser(userId: string) {
   let hash = 0;
@@ -227,20 +220,23 @@ export function DocumentEditor({
     <div className="p-8">
       <ResizableColumn width={width} onWidthChange={handleWidthChange}>
         <div className="flex flex-col gap-4">
-          <TitleEditor title={title} renameAction={renameAction} />
-          {viewers.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1">
-              {viewers.map((viewer) => (
-                <span
-                  key={viewer.clientId}
-                  className="rounded-full px-2 py-0.5 text-xs text-white"
-                  style={{ backgroundColor: viewer.color }}
-                >
-                  {viewer.name}
-                </span>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center justify-between gap-2">
+            <TitleEditor title={title} renameAction={renameAction} />
+            {viewers.length > 0 && (
+              <div className="flex shrink-0 -space-x-2">
+                {viewers.map((viewer) => (
+                  <span
+                    key={viewer.clientId}
+                    title={viewer.name}
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium text-white ring-2 ring-canvas"
+                    style={{ backgroundColor: viewer.color }}
+                  >
+                    {viewer.name.slice(0, 1).toUpperCase()}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="relative" onMouseMove={handleEditorMouseMove}>
             <div className="absolute left-2 top-2 z-10">
               <Toolbar editor={editor} />
@@ -257,8 +253,8 @@ export function DocumentEditor({
               </DragHandle>
             )}
             {!synced && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-950/80">
-                <span className="text-sm text-zinc-500">불러오는 중...</span>
+              <div className="absolute inset-0 flex items-center justify-center bg-canvas/80">
+                <span className="text-sm text-ink/50">불러오는 중...</span>
               </div>
             )}
           </div>

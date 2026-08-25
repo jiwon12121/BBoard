@@ -9,7 +9,7 @@ export default async function Home() {
   if (!user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Link href="/login" className="underline">
+        <Link href="/login" className="text-ink underline">
           로그인하러 가기
         </Link>
       </div>

@@ -9,10 +9,14 @@ export function WorkspaceSwitcher({
   currentName,
   currentId,
   workspaces,
+  memberCount,
+  documentCount,
 }: {
   currentName: string;
   currentId: string;
   workspaces: WorkspaceOption[];
+  memberCount: number;
+  documentCount: number;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -20,10 +24,20 @@ export function WorkspaceSwitcher({
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 truncate text-left font-semibold"
+        className="flex w-full items-start gap-2 rounded-md bg-canvas p-2 text-left shadow-sm transition-colors hover:bg-ink/10"
       >
-        <span className="truncate">{currentName}</span>
-        <span className="text-xs text-zinc-400">▾</span>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-ink text-sm font-semibold text-canvas">
+          {currentName.slice(0, 1)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1">
+            <span className="truncate font-semibold text-ink">{currentName}</span>
+            <span className="text-xs text-ink/40">▾</span>
+          </div>
+          <p className="truncate text-xs text-ink/40">
+            멤버 {memberCount} · 문서 {documentCount}
+          </p>
+        </div>
       </button>
       {open && (
         <>
@@ -31,24 +45,24 @@ export function WorkspaceSwitcher({
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-md border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-md border border-border-ink bg-canvas p-1 shadow-lg">
             {workspaces.map((ws) => (
               <Link
                 key={ws.id}
                 href={`/workspaces/${ws.id}`}
                 onClick={() => setOpen(false)}
-                className={`block truncate rounded px-2 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+                className={`block truncate rounded px-2 py-1.5 text-sm text-ink hover:bg-sidebar ${
                   ws.id === currentId ? "font-semibold" : ""
                 }`}
               >
                 {ws.name}
               </Link>
             ))}
-            <div className="my-1 border-t border-zinc-200 dark:border-zinc-800" />
+            <div className="my-1 border-t border-border-ink" />
             <Link
               href="/workspaces/new"
               onClick={() => setOpen(false)}
-              className="block rounded px-2 py-1.5 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="block rounded px-2 py-1.5 text-sm text-ink/50 hover:bg-sidebar"
             >
               + 새 워크스페이스
             </Link>

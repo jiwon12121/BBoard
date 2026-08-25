@@ -18,16 +18,16 @@ export function DocumentLink({
 
   return (
     <li
-      className={`flex items-center justify-between rounded-md px-2 py-1 ${
-        isActive ? "bg-zinc-100 dark:bg-zinc-800" : ""
+      className={`flex items-center justify-between rounded-md px-2 py-1.5 transition-colors ${
+        isActive ? "bg-canvas shadow-sm" : "hover:bg-ink/5"
       }`}
     >
       <Link
         href={href}
-        className={`truncate text-sm ${
+        className={`flex-1 truncate text-sm ${
           isActive
-            ? "font-semibold text-zinc-900 dark:text-zinc-100"
-            : "text-zinc-600 hover:underline dark:text-zinc-400"
+            ? "font-semibold text-ink"
+            : "text-ink/60 hover:text-ink"
         }`}
       >
         {title}

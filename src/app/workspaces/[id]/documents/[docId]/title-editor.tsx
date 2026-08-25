@@ -18,12 +18,12 @@ export function TitleEditor({
         name="title"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="flex-1 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-xl font-semibold hover:border-zinc-300 focus:border-zinc-300 focus:outline-none dark:hover:border-zinc-700 dark:focus:border-zinc-700"
+        className="flex-1 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[2.5rem] font-semibold tracking-[-0.035em] text-ink hover:border-border-ink focus:border-border-ink focus:outline-none"
       />
       {changed && (
         <button
           type="submit"
-          className="shrink-0 text-sm text-blue-600 underline"
+          className="shrink-0 text-sm text-ink underline"
         >
           저장
         </button>
