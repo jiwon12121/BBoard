@@ -22,9 +22,7 @@ function ToolbarButton({
       aria-label={label}
       aria-pressed={active}
       className={`rounded px-2 py-1 text-left text-sm font-medium ${
-        active
-          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-          : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        active ? "bg-ink text-canvas" : "text-ink/70 hover:bg-sidebar"
       }`}
     >
       {children}
@@ -33,7 +31,7 @@ function ToolbarButton({
 }
 
 function Divider() {
-  return <div className="my-1 h-px w-full bg-zinc-200 dark:bg-zinc-800" />;
+  return <div className="my-1 h-px w-full bg-border-ink" />;
 }
 
 export function Toolbar({ editor }: { editor: Editor | null }) {
@@ -52,7 +50,7 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="서식"
-        className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+        className="flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium text-ink/40 hover:bg-sidebar hover:text-ink/70"
       >
         Aa
       </button>
@@ -62,7 +60,7 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
             className="fixed inset-0 z-40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute left-0 top-full z-50 mt-1 flex w-36 flex-col gap-0.5 rounded-md border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="absolute left-0 top-full z-50 mt-1 flex w-36 flex-col gap-0.5 rounded-md border border-border-ink bg-canvas p-1 shadow-lg">
             <ToolbarButton
               label="굵게"
               active={editor.isActive("bold")}

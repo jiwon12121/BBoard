@@ -67,12 +67,12 @@ export function ResizableColumn({
       <button
         aria-label="문서 너비 조절"
         onMouseDown={() => setDragging(true)}
-        className="absolute -left-3 top-0 h-full w-1.5 cursor-col-resize rounded bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-700"
+        className="absolute -left-3 top-0 h-full w-1.5 cursor-col-resize rounded bg-transparent hover:bg-border-ink"
       />
       <button
         aria-label="문서 너비 조절"
         onMouseDown={() => setDragging(true)}
-        className="absolute -right-3 top-0 h-full w-1.5 cursor-col-resize rounded bg-transparent hover:bg-zinc-300 dark:hover:bg-zinc-700"
+        className="absolute -right-3 top-0 h-full w-1.5 cursor-col-resize rounded bg-transparent hover:bg-border-ink"
       />
     </div>
   );

@@ -74,24 +74,24 @@ export function MemberModal({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="text-xs text-zinc-500 underline"
+        className="text-xs text-ink/50 underline"
       >
         멤버
       </button>
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
           onClick={() => setOpen(false)}
         >
           <div
-            className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-white p-6 dark:bg-zinc-900"
+            className="flex w-full max-w-sm flex-col gap-4 rounded-lg bg-canvas p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">멤버</h2>
+              <h2 className="text-sm font-semibold text-ink">멤버</h2>
               <button
                 onClick={() => setOpen(false)}
-                className="text-sm text-zinc-500"
+                className="text-sm text-ink/50"
               >
                 닫기
               </button>
@@ -103,17 +103,17 @@ export function MemberModal({
                   key={member.user_id}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 text-ink">
                     <span
                       className={`h-2 w-2 shrink-0 rounded-full ${
                         onlineUserIds.has(member.user_id)
                           ? "bg-green-500"
-                          : "bg-zinc-300 dark:bg-zinc-700"
+                          : "bg-border-ink"
                       }`}
                       title={onlineUserIds.has(member.user_id) ? "온라인" : "오프라인"}
                     />
                     {member.name ?? member.email ?? member.user_id}{" "}
-                    <span className="text-zinc-400">({member.role})</span>
+                    <span className="text-ink/40">({member.role})</span>
                   </span>
                   {member.user_id !== ownerId && (
                     <form action={removeMemberAction}>
@@ -133,18 +133,18 @@ export function MemberModal({
                 </li>
               ))}
               {members?.length === 0 && (
-                <p className="text-sm text-zinc-500">멤버가 없습니다.</p>
+                <p className="text-sm text-ink/40">멤버가 없습니다.</p>
               )}
             </ul>
 
-            <div className="flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-              <h3 className="text-sm font-semibold">멤버 초대</h3>
+            <div className="flex flex-col gap-2 border-t border-border-ink pt-4">
+              <h3 className="text-sm font-semibold text-ink">멤버 초대</h3>
               {inviteUrl && (
-                <div className="flex flex-col gap-1 rounded-md bg-zinc-100 p-2 dark:bg-zinc-800">
-                  <span className="text-xs text-zinc-500">
+                <div className="flex flex-col gap-1 rounded-md bg-sidebar p-2">
+                  <span className="text-xs text-ink/50">
                     {inviteRole} 권한으로 참여
                   </span>
-                  <p className="break-all text-xs text-zinc-900 dark:text-zinc-100">
+                  <p className="break-all text-xs text-ink">
                     {inviteUrl}
                   </p>
                 </div>
@@ -156,14 +156,14 @@ export function MemberModal({
                 <select
                   name="role"
                   defaultValue="editor"
-                  className="rounded-md border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  className="rounded-md border border-border-ink bg-canvas px-2 py-1 text-sm text-ink"
                 >
                   <option value="editor">editor</option>
                   <option value="viewer">viewer</option>
                 </select>
                 <button
                   type="submit"
-                  className="rounded-md bg-black px-3 py-1 text-sm text-white dark:bg-white dark:text-black"
+                  className="rounded-md bg-ink px-3 py-1 text-sm text-canvas"
                 >
                   초대 링크 생성
                 </button>

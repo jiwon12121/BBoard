@@ -22,7 +22,7 @@ export default async function InvitePage({
   if (error || !workspaceId) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-ink/40">
           초대 링크가 유효하지 않습니다.
         </p>
       </div>
