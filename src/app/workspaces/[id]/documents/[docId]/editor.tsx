@@ -11,6 +11,7 @@ import useYProvider from "y-partyserver/react";
 import { ResizableColumn } from "./resizable-column";
 import { Toolbar } from "./toolbar";
 import { TitleEditor } from "./title-editor";
+import { useWorkspacePresence } from "../../workspace-presence-context";
 
 const CURSOR_COLORS = ["#676380", "#5f6b5c", "#8a6559", "#7c6a54", "#8a7548"];
 
@@ -91,6 +92,15 @@ export function DocumentEditor({
       provider.off("synced", handleSynced);
     };
   }, [provider]);
+
+  // Reports which document this user is currently on, for the workspace
+  // activity sidebar's "지금 이 워크스페이스" list.
+  const { setCurrentDocument } = useWorkspacePresence();
+
+  useEffect(() => {
+    setCurrentDocument({ id: documentId, title });
+    return () => setCurrentDocument(null);
+  }, [documentId, title, setCurrentDocument]);
 
   // Who's currently viewing/editing this document - read from the same Yjs
   // awareness data CollaborationCaret uses for cursor colors, so no extra

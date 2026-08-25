@@ -3,10 +3,10 @@ import { getCachedUser } from "@/lib/supabase/get-user";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
-import { DeleteDocumentButton } from "./delete-document-button";
+import { ActivitySidebar } from "./activity-sidebar";
 import { DocumentLink } from "./document-link";
-import { MemberModal } from "./member-modal";
 import { WorkspaceSwitcher } from "./workspace-switcher";
+import { WorkspacePresenceProvider } from "./workspace-presence-context";
 
 export default async function WorkspaceLayout({
   children,
@@ -18,30 +18,21 @@ export default async function WorkspaceLayout({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [
-    { data: workspace },
-    user,
-    { data: documents },
-    { data: allWorkspaces },
-    { count: memberCount },
-  ] = await Promise.all([
-    supabase
-      .from("workspaces")
-      .select("id, name, owner_id")
-      .eq("id", id)
-      .single(),
-    getCachedUser(),
-    supabase
-      .from("documents")
-      .select("id, title")
-      .eq("workspace_id", id)
-      .order("updated_at", { ascending: false }),
-    supabase.from("workspaces").select("id, name").order("created_at"),
-    supabase
-      .from("workspace_members")
-      .select("*", { count: "exact", head: true })
-      .eq("workspace_id", id),
-  ]);
+  const [{ data: workspace }, user, { data: documents }, { data: allWorkspaces }] =
+    await Promise.all([
+      supabase
+        .from("workspaces")
+        .select("id, name, owner_id")
+        .eq("id", id)
+        .single(),
+      getCachedUser(),
+      supabase
+        .from("documents")
+        .select("id, title")
+        .eq("workspace_id", id)
+        .order("updated_at", { ascending: false }),
+      supabase.from("workspaces").select("id, name").order("created_at"),
+    ]);
 
   if (!workspace) {
     redirect("/");
@@ -60,12 +51,10 @@ export default async function WorkspaceLayout({
             .limit(1)
             .maybeSingle()
         : Promise.resolve({ data: null }),
-      isOwner
-        ? supabase
-            .from("workspace_members")
-            .select("user_id, role")
-            .eq("workspace_id", id)
-        : Promise.resolve({ data: null }),
+      // Any member can already read the full membership list per RLS - the
+      // right sidebar's member list needs it regardless of role, not just
+      // the owner-only member management modal.
+      supabase.from("workspace_members").select("user_id, role").eq("workspace_id", id),
       !isOwner && user
         ? supabase
             .from("workspace_members")
@@ -81,6 +70,15 @@ export default async function WorkspaceLayout({
     : ownMembership?.role === "viewer"
       ? "보기 권한"
       : "편집 권한";
+  const canEdit = isOwner || ownMembership?.role === "editor";
+
+  const { data: favoriteRows } = user
+    ? await supabase
+        .from("document_favorites")
+        .select("document_id")
+        .eq("user_id", user.id)
+    : { data: null };
+  const favoriteDocIds = new Set(favoriteRows?.map((f) => f.document_id));
 
   const { data: memberProfiles } = memberRows?.length
     ? await supabase
@@ -132,20 +130,47 @@ export default async function WorkspaceLayout({
     redirect(`/workspaces/${id}`);
   }
 
-  async function removeMember(formData: FormData) {
+  async function renameDocumentFromList(formData: FormData) {
     "use server";
-    const userId = formData.get("userId");
-    if (typeof userId !== "string") return;
+    const docId = formData.get("docId");
+    const title = formData.get("title");
+    if (typeof docId !== "string" || typeof title !== "string" || !title.trim()) return;
 
     const supabase = await createClient();
-    await supabase
-      .from("workspace_members")
-      .delete()
-      .eq("workspace_id", id)
-      .eq("user_id", userId);
+    await supabase.from("documents").update({ title: title.trim() }).eq("id", docId);
 
     revalidatePath(`/workspaces/${id}`, "layout");
-    redirect(`/workspaces/${id}`);
+  }
+
+  async function toggleFavorite(formData: FormData) {
+    "use server";
+    const docId = formData.get("docId");
+    if (typeof docId !== "string") return;
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: existing } = await supabase
+      .from("document_favorites")
+      .select("document_id")
+      .eq("user_id", user.id)
+      .eq("document_id", docId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("document_favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("document_id", docId);
+    } else {
+      await supabase.from("document_favorites").insert({ user_id: user.id, document_id: docId });
+    }
+
+    revalidatePath(`/workspaces/${id}`, "layout");
   }
 
   async function createInvite(formData: FormData) {
@@ -169,44 +194,21 @@ export default async function WorkspaceLayout({
     ? `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/invite/${latestInvite.token}`
     : null;
 
-  return (
+  const sidebarLayout = (
     <div className="flex flex-1">
       <aside className="flex w-[292px] shrink-0 flex-col bg-sidebar border-r border-border-ink">
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-          <div className="flex flex-col gap-1">
-            <WorkspaceSwitcher
-              currentName={workspace.name}
-              currentId={id}
-              workspaces={allWorkspaces ?? []}
-              memberCount={memberCount ?? 0}
-              documentCount={documents?.length ?? 0}
-            />
-            {user && (
-              <div className="px-1">
-                <MemberModal
-                  members={members}
-                  ownerId={workspace.owner_id}
-                  isOwner={isOwner}
-                  workspaceId={id}
-                  currentUserId={user.id}
-                  currentUserName={user.user_metadata?.full_name ?? user.email ?? "익명"}
-                  inviteUrl={inviteUrl}
-                  inviteRole={latestInvite?.role}
-                  removeMemberAction={removeMember}
-                  createInviteAction={createInvite}
-                />
-              </div>
-            )}
-          </div>
-
-          <form action={createDocument}>
-            <button
-              type="submit"
-              className="text-sm text-ink/70 underline hover:text-ink"
-            >
-              + 새 문서
-            </button>
-          </form>
+          <WorkspaceSwitcher
+            currentName={workspace.name}
+            currentId={id}
+            workspaces={allWorkspaces ?? []}
+            memberCount={memberRows?.length ?? 0}
+            documentCount={documents?.length ?? 0}
+            isOwner={isOwner}
+            inviteUrl={inviteUrl}
+            inviteRole={latestInvite?.role}
+            createInviteAction={createInvite}
+          />
 
           <div className="flex flex-col gap-1">
             <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
@@ -216,22 +218,30 @@ export default async function WorkspaceLayout({
               {documents?.map((doc) => (
                 <DocumentLink
                   key={doc.id}
+                  docId={doc.id}
                   href={`/workspaces/${id}/documents/${doc.id}`}
                   title={doc.title}
-                  actions={
-                    isOwner && (
-                      <DeleteDocumentButton
-                        docId={doc.id}
-                        deleteAction={deleteDocument}
-                      />
-                    )
-                  }
+                  isFavorite={favoriteDocIds.has(doc.id)}
+                  canEdit={canEdit}
+                  isOwner={isOwner}
+                  renameAction={renameDocumentFromList}
+                  toggleFavoriteAction={toggleFavorite}
+                  deleteAction={deleteDocument}
                 />
               ))}
               {documents?.length === 0 && (
                 <p className="text-sm text-ink/40">문서가 없습니다.</p>
               )}
             </ul>
+            <form action={createDocument}>
+              <button
+                type="submit"
+                aria-label="새 문서"
+                className="flex w-full cursor-pointer items-center justify-center rounded-md px-2 py-1.5 text-lg text-ink/40 hover:bg-ink/5 hover:text-ink"
+              >
+                +
+              </button>
+            </form>
           </div>
         </div>
 
@@ -254,6 +264,20 @@ export default async function WorkspaceLayout({
         </div>
       </aside>
       <main className="flex-1 overflow-y-auto bg-canvas">{children}</main>
+      {user && <ActivitySidebar workspaceId={id} members={members} />}
     </div>
+  );
+
+  if (!user) return sidebarLayout;
+
+  return (
+    <WorkspacePresenceProvider
+      workspaceId={id}
+      userId={user.id}
+      userName={user.user_metadata?.full_name ?? user.email ?? "익명"}
+      isOwner={isOwner}
+    >
+      {sidebarLayout}
+    </WorkspacePresenceProvider>
   );
 }
