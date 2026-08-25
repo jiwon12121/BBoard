@@ -20,7 +20,7 @@ export function LogoutButton() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="설정"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-ink/40 hover:bg-canvas hover:text-ink"
+        className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink/40 hover:bg-canvas hover:text-ink"
       >
         ⚙
       </button>
@@ -30,7 +30,7 @@ export function LogoutButton() {
           <div className="absolute bottom-full right-0 z-50 mb-1 w-32 rounded-md border border-border-ink bg-canvas p-1 shadow-lg">
             <button
               onClick={handleLogout}
-              className="block w-full rounded px-2 py-1.5 text-left text-sm text-ink hover:bg-sidebar"
+              className="block w-full cursor-pointer rounded px-2 py-1.5 text-left text-sm text-ink hover:bg-sidebar"
             >
               로그아웃
             </button>
