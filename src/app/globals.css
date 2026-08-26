@@ -170,3 +170,228 @@ body {
   background: none;
   padding: 0;
 }
+
+/* Checkbox / task list, from @tiptap/extension-task-list + -task-item */
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.tiptap ul[data-type="taskList"] li > label {
+  margin-top: 0.35em;
+  user-select: none;
+}
+
+.tiptap ul[data-type="taskList"] li > label input[type="checkbox"] {
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+.tiptap ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: color-mix(in srgb, var(--ink) 45%, transparent);
+  text-decoration: line-through;
+}
+
+/* Toggle, from @tiptap/extension-details */
+.tiptap div[data-type="details"] {
+  display: flex;
+  gap: 0.4em;
+  padding: 0.25em 0;
+}
+
+.tiptap div[data-type="details"] > button {
+  flex-shrink: 0;
+  width: 1.25em;
+  height: 1.5em;
+  margin-top: 0.1em;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.tiptap div[data-type="details"] > button:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.tiptap div[data-type="details"] > button::before {
+  content: "▸";
+  display: block;
+  text-align: center;
+}
+
+.tiptap div[data-type="details"].is-open > button::before {
+  content: "▾";
+}
+
+.tiptap div[data-type="details"] > div {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Open/closed visibility of the content is handled by the extension itself
+   (toggling a native `hidden` attribute), not CSS. */
+.tiptap summary {
+  font-weight: 500;
+}
+
+.tiptap div[data-type="detailsContent"] {
+  padding-top: 0.25em;
+}
+
+/* Image, from @tiptap/extension-image (resize enabled, rendered through
+   @tiptap/core's ResizableNodeView - see [data-resize-*] rules below) */
+.tiptap img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+}
+
+/* YouTube embed, from ./youtube-extension.ts (also ResizableNodeView-based) */
+.tiptap div[data-youtube-video] {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.tiptap div[data-youtube-video] iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Resize handles, rendered by @tiptap/core's ResizableNodeView (used by the
+   image and youtube blocks above). No default styling ships with it - the
+   container/wrapper/handle elements are only identifiable via data attrs. */
+/* margin-block only (not the `margin` shorthand) - the shorthand would
+   also set margin-left/right to 0, wiping out the 1.75rem gutter that
+   `.tiptap > *` reserves on both sides for the drag handle, and since
+   this selector has higher specificity than `.tiptap > *` it would win
+   and pull the block flush to the edge, right on top of the handle. */
+.tiptap [data-resize-container] {
+  margin-block: 0.5em;
+}
+
+/* [data-resize-wrapper] is a flex item inside [data-resize-container]
+   (display:flex, set inline by ResizableNodeView). Flex items default to
+   min-width:auto, which for a wrapper holding a replaced element (img) or
+   an intrinsically-sized box (the youtube iframe) floors the item's width
+   at the content's natural size - so it can't shrink to fit the column,
+   overflows past the block's normal margin, and pushes the resize
+   handles (positioned relative to this wrapper) out along with it. */
+.tiptap [data-resize-wrapper] {
+  min-width: 0;
+}
+
+/* Thin outline around the media itself, shown on hover so it reads as
+   "selectable" before the user even reaches for a handle. */
+.tiptap [data-resize-wrapper]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.tiptap [data-resize-wrapper]:hover::after {
+  opacity: 0.25;
+}
+
+.tiptap [data-resize-container][data-resize-state="true"] [data-resize-wrapper]::after {
+  opacity: 0.5;
+}
+
+/* Corner-bracket handles (┌ ┐ └ ┘) - an outlined corner, not a filled dot,
+   drawn via ::before so only two of its four sides get a visible border. */
+.tiptap [data-resize-handle] {
+  --tx: 0%;
+  --ty: 0%;
+  --handle-border: 2px;
+  width: 0.9rem;
+  height: 0.9rem;
+  opacity: 0;
+  transform: translate(var(--tx), var(--ty)) scale(0.8);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.tiptap [data-resize-handle]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-style: solid;
+  border-width: 0;
+  border-color: var(--ink);
+  transition: border-width 0.12s ease;
+}
+
+.tiptap [data-resize-wrapper]:hover [data-resize-handle],
+.tiptap [data-resize-container][data-resize-state="true"] [data-resize-handle] {
+  opacity: 1;
+  transform: translate(var(--tx), var(--ty)) scale(1);
+}
+
+.tiptap [data-resize-handle]:hover {
+  --handle-border: 2.5px;
+}
+
+.tiptap [data-resize-handle="top-left"] {
+  --tx: -50%;
+  --ty: -50%;
+  cursor: nwse-resize;
+}
+
+.tiptap [data-resize-handle="top-left"]::before {
+  border-top-width: var(--handle-border);
+  border-left-width: var(--handle-border);
+  border-top-left-radius: 0.2rem;
+}
+
+.tiptap [data-resize-handle="top-right"] {
+  --tx: 50%;
+  --ty: -50%;
+  cursor: nesw-resize;
+}
+
+.tiptap [data-resize-handle="top-right"]::before {
+  border-top-width: var(--handle-border);
+  border-right-width: var(--handle-border);
+  border-top-right-radius: 0.2rem;
+}
+
+.tiptap [data-resize-handle="bottom-left"] {
+  --tx: -50%;
+  --ty: 50%;
+  cursor: nesw-resize;
+}
+
+.tiptap [data-resize-handle="bottom-left"]::before {
+  border-bottom-width: var(--handle-border);
+  border-left-width: var(--handle-border);
+  border-bottom-left-radius: 0.2rem;
+}
+
+.tiptap [data-resize-handle="bottom-right"] {
+  --tx: 50%;
+  --ty: 50%;
+  cursor: nwse-resize;
+}
+
+.tiptap [data-resize-handle="bottom-right"]::before {
+  border-bottom-width: var(--handle-border);
+  border-right-width: var(--handle-border);
+  border-bottom-right-radius: 0.2rem;
+}

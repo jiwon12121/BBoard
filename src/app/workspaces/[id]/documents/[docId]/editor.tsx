@@ -3,18 +3,29 @@
 import { offset } from "@floating-ui/dom";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
+import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-details";
 import DragHandle from "@tiptap/extension-drag-handle-react";
+import TaskItem from "@tiptap/extension-task-item";
+import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useYProvider from "y-partyserver/react";
-import { ResizableColumn } from "./resizable-column";
+import { ResizableImage } from "./image-extension";
+import { DEFAULT_WIDTH, ResizableColumn } from "./resizable-column";
 import { Toolbar } from "./toolbar";
 import { TitleEditor } from "./title-editor";
+import { uploadDocumentImage } from "./upload-image";
+import { ResizableYoutube } from "./youtube-extension";
 import { useWorkspacePresence } from "../../workspace-presence-context";
 import { InviteModal } from "../../invite-modal";
 
 const CURSOR_COLORS = ["#676380", "#5f6b5c", "#8a6559", "#7c6a54", "#8a7548"];
+
+// Images/videos default to this fraction of the document's own configured
+// width (not the full width) so they read as content inset from the text
+// column's edges, not edge-to-edge - same fraction used as the resize max.
+const MEDIA_WIDTH_RATIO = 0.9;
 
 function colorForUser(userId: string) {
   let hash = 0;
@@ -167,6 +178,13 @@ export function DocumentEditor({
     );
   };
 
+  const mediaWidth = Math.round((width ?? DEFAULT_WIDTH) * MEDIA_WIDTH_RATIO);
+  // handleDrop below is captured once by useEditor (only [provider, editable]
+  // are deps), so it needs a ref rather than reading `mediaWidth` directly
+  // to see width changes made after the editor was created.
+  const mediaWidthRef = useRef(mediaWidth);
+  mediaWidthRef.current = mediaWidth;
+
   const editor = useEditor(
     {
       immediatelyRender: false,
@@ -178,10 +196,82 @@ export function DocumentEditor({
           provider,
           user: { name: userName, color: colorForUser(userId) },
         }),
+        Details.configure({ persist: true }),
+        DetailsSummary,
+        DetailsContent,
+        TaskList,
+        TaskItem.configure({ nested: true }),
+        ResizableImage,
+        ResizableYoutube,
       ],
+      editorProps: {
+        handleDrop: (view, event, _slice, moved) => {
+          // `moved` means this is an internal drag (e.g. reordering a
+          // block), not a file being dropped in from outside.
+          if (moved) return false;
+          const files = Array.from(event.dataTransfer?.files ?? []).filter((file) =>
+            file.type.startsWith("image/"),
+          );
+          if (files.length === 0) return false;
+          event.preventDefault();
+
+          const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          const insertPos = coords?.pos ?? view.state.selection.from;
+
+          (async () => {
+            for (const file of files) {
+              const url = await uploadDocumentImage(file);
+              if (!url) continue;
+              const { schema, tr } = view.state;
+              view.dispatch(
+                tr.insert(
+                  insertPos,
+                  schema.nodes.image.create({ src: url, width: mediaWidthRef.current }),
+                ),
+              );
+            }
+          })();
+
+          return true;
+        },
+      },
     },
     [provider, editable],
   );
+
+  // Resize's max width lives in extension storage (not a config option -
+  // @tiptap/extension-image's resize option has no max, so both media
+  // extensions read it from here instead) so it can track the document's
+  // own width as that changes, without recreating the editor.
+  useEffect(() => {
+    if (!editor) return;
+    const storage = editor.storage as unknown as Record<string, { maxWidth?: number }>;
+    storage.image.maxWidth = mediaWidth;
+    storage.youtube.maxWidth = mediaWidth;
+
+    // Existing images/videos were sized against whatever the document's
+    // width was at the time - narrowing the document past one of them
+    // should shrink it back down to fit too, not just cap future resizes.
+    // Runs off `synced` as well so media that arrives already oversized
+    // (opening a doc that's since been narrowed) gets caught on load, not
+    // only on the next live width change.
+    const { state } = editor;
+    let tr = state.tr;
+    let changed = false;
+    state.doc.descendants((node, pos) => {
+      if (node.type.name !== "image" && node.type.name !== "youtube") return;
+      const currentWidth = node.attrs.width;
+      if (typeof currentWidth !== "number" || currentWidth <= mediaWidth) return;
+      const scale = mediaWidth / currentWidth;
+      tr = tr.setNodeAttribute(pos, "width", Math.round(mediaWidth));
+      const currentHeight = node.attrs.height;
+      if (typeof currentHeight === "number") {
+        tr = tr.setNodeAttribute(pos, "height", Math.round(currentHeight * scale));
+      }
+      changed = true;
+    });
+    if (changed) editor.view.dispatch(tr);
+  }, [editor, mediaWidth, synced]);
 
   // Only one drag handle should be visible at a time: left by default,
   // right only in the last 10% of the hovered block's own row width (not
@@ -281,7 +371,7 @@ export function DocumentEditor({
           <div className="relative" onMouseMove={editable ? handleEditorMouseMove : undefined}>
             {editable && (
               <div className="absolute left-2 top-2 z-10">
-                <Toolbar editor={editor} />
+                <Toolbar editor={editor} mediaWidth={mediaWidth} />
               </div>
             )}
             <EditorContent editor={editor} className="min-h-[400px] p-4" />

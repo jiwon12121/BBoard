@@ -1,8 +1,9 @@
 "use client";
 
 import { type Editor } from "@tiptap/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { uploadDocumentImage } from "./upload-image";
 
 function ToolbarButton({
   onClick,
@@ -34,15 +35,38 @@ function Divider() {
   return <div className="my-1 h-px w-full bg-border-ink" />;
 }
 
-export function Toolbar({ editor }: { editor: Editor | null }) {
+export function Toolbar({
+  editor,
+  mediaWidth,
+}: {
+  editor: Editor | null;
+  mediaWidth: number;
+}) {
   const [open, setOpen] = useState(false);
-
-  if (!editor) return null;
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const run = (command: () => void) => () => {
     command();
     setOpen(false);
   };
+
+  const handleImageFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !editor) return;
+
+    setUploading(true);
+    try {
+      const publicUrl = await uploadDocumentImage(file);
+      if (!publicUrl) return;
+      editor.chain().focus().setImage({ src: publicUrl, width: mediaWidth }).run();
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (!editor) return null;
 
   return (
     <div className="relative">
@@ -134,6 +158,13 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
               번호 목록
             </ToolbarButton>
             <ToolbarButton
+              label="체크박스"
+              active={editor.isActive("taskList")}
+              onClick={run(() => editor.chain().focus().toggleTaskList().run())}
+            >
+              체크박스
+            </ToolbarButton>
+            <ToolbarButton
               label="인용"
               active={editor.isActive("blockquote")}
               onClick={run(() =>
@@ -151,9 +182,41 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
             >
               코드 블록
             </ToolbarButton>
+
+            <Divider />
+
+            <ToolbarButton
+              label="토글"
+              active={editor.isActive("details")}
+              onClick={run(() => editor.chain().focus().setDetails().run())}
+            >
+              토글
+            </ToolbarButton>
+            <ToolbarButton
+              label="이미지"
+              onClick={run(() => fileInputRef.current?.click())}
+            >
+              {uploading ? "업로드 중..." : "이미지"}
+            </ToolbarButton>
+            <ToolbarButton
+              label="유튜브"
+              onClick={run(() => {
+                const url = window.prompt("유튜브 링크를 입력하세요");
+                if (url) editor.chain().focus().setYoutubeVideo({ src: url, width: mediaWidth }).run();
+              })}
+            >
+              유튜브
+            </ToolbarButton>
           </div>
         </>
       )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageFile}
+      />
     </div>
   );
 }
