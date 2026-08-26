@@ -10,7 +10,7 @@ export function DocumentLink({
   docId,
   isFavorite,
   canEdit,
-  isOwner,
+  canDelete,
   renameAction,
   toggleFavoriteAction,
   deleteAction,
@@ -20,7 +20,7 @@ export function DocumentLink({
   docId: string;
   isFavorite: boolean;
   canEdit: boolean;
-  isOwner: boolean;
+  canDelete: boolean;
   renameAction: (formData: FormData) => void;
   toggleFavoriteAction: (formData: FormData) => void;
   deleteAction: (formData: FormData) => void;
@@ -111,7 +111,7 @@ export function DocumentLink({
                   이름 바꾸기
                 </button>
               )}
-              {isOwner && (
+              {canDelete && (
                 <form
                   action={deleteAction}
                   onSubmit={(e) => {

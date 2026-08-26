@@ -22,13 +22,13 @@ export default async function WorkspaceLayout({
     await Promise.all([
       supabase
         .from("workspaces")
-        .select("id, name, owner_id")
+        .select("id, name, owner_id, kind")
         .eq("id", id)
         .single(),
       getCachedUser(),
       supabase
         .from("documents")
-        .select("id, title")
+        .select("id, title, is_personal, created_by")
         .eq("workspace_id", id)
         .order("updated_at", { ascending: false }),
       supabase.from("workspaces").select("id, name").order("created_at"),
@@ -67,9 +67,11 @@ export default async function WorkspaceLayout({
 
   const roleLabel = isOwner
     ? "소유자"
-    : ownMembership?.role === "viewer"
-      ? "보기 권한"
-      : "편집 권한";
+    : ownMembership?.role === "editor"
+      ? "편집 권한"
+      : ownMembership?.role === "guest"
+        ? "보기 권한"
+        : "게스트";
   const canEdit = isOwner || ownMembership?.role === "editor";
 
   const { data: favoriteRows } = user
@@ -110,6 +112,25 @@ export default async function WorkspaceLayout({
     const { data, error } = await supabase
       .from("documents")
       .insert({ workspace_id: id, created_by: user.id })
+      .select("id")
+      .single();
+    if (error || !data) return;
+
+    revalidatePath(`/workspaces/${id}`, "layout");
+    redirect(`/workspaces/${id}/documents/${data.id}`);
+  }
+
+  async function createPersonalDocument() {
+    "use server";
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("documents")
+      .insert({ workspace_id: id, created_by: user.id, is_personal: true })
       .select("id")
       .single();
     if (error || !data) return;
@@ -181,7 +202,7 @@ export default async function WorkspaceLayout({
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    const role = formData.get("role") === "viewer" ? "viewer" : "editor";
+    const role = formData.get("role") === "guest" ? "guest" : "editor";
     await supabase
       .from("workspace_invites")
       .insert({ workspace_id: id, role, created_by: user.id });
@@ -209,7 +230,7 @@ export default async function WorkspaceLayout({
     </form>
   );
 
-  function renderDocLink(doc: { id: string; title: string }) {
+  function renderDocLink(doc: { id: string; title: string; is_personal: boolean; created_by: string }) {
     return (
       <DocumentLink
         key={doc.id}
@@ -217,14 +238,29 @@ export default async function WorkspaceLayout({
         href={`/workspaces/${id}/documents/${doc.id}`}
         title={doc.title}
         isFavorite={favoriteDocIds.has(doc.id)}
-        canEdit={canEdit}
-        isOwner={isOwner}
+        canEdit={canEdit || (doc.is_personal && doc.created_by === user?.id)}
+        canDelete={isOwner || (doc.is_personal && doc.created_by === user?.id)}
         renameAction={renameDocumentFromList}
         toggleFavoriteAction={toggleFavorite}
         deleteAction={deleteDocument}
       />
     );
   }
+
+  const teamDocuments = documents?.filter((doc) => !doc.is_personal) ?? [];
+  const personalDocuments = documents?.filter((doc) => doc.is_personal) ?? [];
+
+  const newPersonalDocumentButton = (
+    <form action={createPersonalDocument}>
+      <button
+        type="submit"
+        aria-label="새 개인 문서"
+        className="flex w-full cursor-pointer items-center justify-center rounded-md px-2 py-1.5 text-lg text-ink/40 hover:bg-ink/5 hover:text-ink"
+      >
+        +
+      </button>
+    </form>
+  );
 
   const sidebarLayout = (
     <div className="flex flex-1">
@@ -264,26 +300,48 @@ export default async function WorkspaceLayout({
             </div>
           )}
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
-              팀 문서 {documents?.length ?? 0}
-            </span>
-            <ul className="flex flex-col gap-0.5">
-              {documents?.map(renderDocLink)}
-              {documents?.length === 0 && (
-                <p className="text-sm text-ink/40">문서가 없습니다.</p>
-              )}
-            </ul>
-            {newDocumentButton}
-          </div>
+          {workspace.kind === "personal" ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
+                개인 문서 {documents?.length ?? 0}
+              </span>
+              <ul className="flex flex-col gap-0.5">
+                {documents?.map(renderDocLink)}
+                {documents?.length === 0 && (
+                  <p className="text-sm text-ink/40">문서가 없습니다.</p>
+                )}
+              </ul>
+              {newDocumentButton}
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1">
+                <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
+                  팀 문서 {teamDocuments.length}
+                </span>
+                <ul className="flex flex-col gap-0.5">
+                  {teamDocuments.map(renderDocLink)}
+                  {teamDocuments.length === 0 && (
+                    <p className="text-sm text-ink/40">문서가 없습니다.</p>
+                  )}
+                </ul>
+                {newDocumentButton}
+              </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
-              개인 문서 0
-            </span>
-            <p className="text-sm text-ink/30">아직 지원되지 않는 기능입니다.</p>
-            {newDocumentButton}
-          </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
+                  개인 문서 {personalDocuments.length}
+                </span>
+                <ul className="flex flex-col gap-0.5">
+                  {personalDocuments.map(renderDocLink)}
+                  {personalDocuments.length === 0 && (
+                    <p className="text-sm text-ink/40">문서가 없습니다.</p>
+                  )}
+                </ul>
+                {newPersonalDocumentButton}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-border-ink p-4">

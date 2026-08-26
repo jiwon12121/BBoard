@@ -12,6 +12,7 @@ import { ResizableColumn } from "./resizable-column";
 import { Toolbar } from "./toolbar";
 import { TitleEditor } from "./title-editor";
 import { useWorkspacePresence } from "../../workspace-presence-context";
+import { InviteModal } from "../../invite-modal";
 
 const CURSOR_COLORS = ["#676380", "#5f6b5c", "#8a6559", "#7c6a54", "#8a7548"];
 
@@ -60,6 +61,11 @@ export function DocumentEditor({
   accessToken,
   renameAction,
   updateWidthAction,
+  editable,
+  canShare,
+  documentInviteUrl,
+  documentInviteRole,
+  createDocumentInviteAction,
 }: {
   documentId: string;
   title: string;
@@ -69,7 +75,13 @@ export function DocumentEditor({
   accessToken: string;
   renameAction: (formData: FormData) => void;
   updateWidthAction: (width: number) => void;
+  editable: boolean;
+  canShare: boolean;
+  documentInviteUrl: string | null;
+  documentInviteRole: string | undefined;
+  createDocumentInviteAction: (formData: FormData) => void;
 }) {
+  const [shareOpen, setShareOpen] = useState(false);
   const provider = useYProvider({
     host: process.env.NEXT_PUBLIC_SYNC_SERVER_URL ?? "localhost:8787",
     party: "document-sync",
@@ -158,6 +170,7 @@ export function DocumentEditor({
   const editor = useEditor(
     {
       immediatelyRender: false,
+      editable,
       extensions: [
         StarterKit.configure({ undoRedo: false }),
         Collaboration.configure({ document: provider.doc }),
@@ -167,7 +180,7 @@ export function DocumentEditor({
         }),
       ],
     },
-    [provider],
+    [provider, editable],
   );
 
   // Only one drag handle should be visible at a time: left by default,
@@ -232,27 +245,47 @@ export function DocumentEditor({
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-2">
             <TitleEditor title={title} renameAction={renameAction} />
-            {viewers.length > 0 && (
-              <div className="flex shrink-0 -space-x-2">
-                {viewers.map((viewer) => (
-                  <span
-                    key={viewer.clientId}
-                    title={viewer.name}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium text-white ring-2 ring-canvas"
-                    style={{ backgroundColor: viewer.color }}
-                  >
-                    {viewer.name.slice(0, 1).toUpperCase()}
-                  </span>
-                ))}
+            <div className="flex shrink-0 items-center gap-2">
+              {viewers.length > 0 && (
+                <div className="flex -space-x-2">
+                  {viewers.map((viewer) => (
+                    <span
+                      key={viewer.clientId}
+                      title={viewer.name}
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium text-white ring-2 ring-canvas"
+                      style={{ backgroundColor: viewer.color }}
+                    >
+                      {viewer.name.slice(0, 1).toUpperCase()}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {canShare && (
+                <button
+                  onClick={() => setShareOpen(true)}
+                  className="cursor-pointer rounded-md border border-border-ink px-3 py-1 text-sm text-ink hover:bg-sidebar"
+                >
+                  공유
+                </button>
+              )}
+            </div>
+          </div>
+          <InviteModal
+            open={shareOpen}
+            onClose={() => setShareOpen(false)}
+            title="문서 공유"
+            inviteUrl={documentInviteUrl}
+            inviteRole={documentInviteRole}
+            createInviteAction={createDocumentInviteAction}
+          />
+          <div className="relative" onMouseMove={editable ? handleEditorMouseMove : undefined}>
+            {editable && (
+              <div className="absolute left-2 top-2 z-10">
+                <Toolbar editor={editor} />
               </div>
             )}
-          </div>
-          <div className="relative" onMouseMove={handleEditorMouseMove}>
-            <div className="absolute left-2 top-2 z-10">
-              <Toolbar editor={editor} />
-            </div>
             <EditorContent editor={editor} className="min-h-[400px] p-4" />
-            {editor && (
+            {editor && editable && (
               <DragHandle
                 editor={editor}
                 computePositionConfig={dragHandlePosition}
