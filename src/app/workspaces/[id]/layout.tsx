@@ -194,6 +194,38 @@ export default async function WorkspaceLayout({
     ? `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/invite/${latestInvite.token}`
     : null;
 
+  const favoriteDocuments = documents?.filter((doc) => favoriteDocIds.has(doc.id)) ?? [];
+  const recentDocuments = (documents ?? []).slice(0, 4);
+
+  const newDocumentButton = (
+    <form action={createDocument}>
+      <button
+        type="submit"
+        aria-label="새 문서"
+        className="flex w-full cursor-pointer items-center justify-center rounded-md px-2 py-1.5 text-lg text-ink/40 hover:bg-ink/5 hover:text-ink"
+      >
+        +
+      </button>
+    </form>
+  );
+
+  function renderDocLink(doc: { id: string; title: string }) {
+    return (
+      <DocumentLink
+        key={doc.id}
+        docId={doc.id}
+        href={`/workspaces/${id}/documents/${doc.id}`}
+        title={doc.title}
+        isFavorite={favoriteDocIds.has(doc.id)}
+        canEdit={canEdit}
+        isOwner={isOwner}
+        renameAction={renameDocumentFromList}
+        toggleFavoriteAction={toggleFavorite}
+        deleteAction={deleteDocument}
+      />
+    );
+  }
+
   const sidebarLayout = (
     <div className="flex flex-1">
       <aside className="flex w-[292px] shrink-0 flex-col bg-sidebar border-r border-border-ink">
@@ -210,38 +242,47 @@ export default async function WorkspaceLayout({
             createInviteAction={createInvite}
           />
 
+          {favoriteDocuments.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
+                즐겨찾기 {favoriteDocuments.length}
+              </span>
+              <ul className="flex flex-col gap-0.5">
+                {favoriteDocuments.map(renderDocLink)}
+              </ul>
+            </div>
+          )}
+
+          {recentDocuments.length > 0 && (
+            <div className="flex flex-col gap-1">
+              <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
+                최근 수정한 문서
+              </span>
+              <ul className="flex flex-col gap-0.5">
+                {recentDocuments.map(renderDocLink)}
+              </ul>
+            </div>
+          )}
+
           <div className="flex flex-col gap-1">
             <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
-              문서 {documents?.length ?? 0}
+              팀 문서 {documents?.length ?? 0}
             </span>
             <ul className="flex flex-col gap-0.5">
-              {documents?.map((doc) => (
-                <DocumentLink
-                  key={doc.id}
-                  docId={doc.id}
-                  href={`/workspaces/${id}/documents/${doc.id}`}
-                  title={doc.title}
-                  isFavorite={favoriteDocIds.has(doc.id)}
-                  canEdit={canEdit}
-                  isOwner={isOwner}
-                  renameAction={renameDocumentFromList}
-                  toggleFavoriteAction={toggleFavorite}
-                  deleteAction={deleteDocument}
-                />
-              ))}
+              {documents?.map(renderDocLink)}
               {documents?.length === 0 && (
                 <p className="text-sm text-ink/40">문서가 없습니다.</p>
               )}
             </ul>
-            <form action={createDocument}>
-              <button
-                type="submit"
-                aria-label="새 문서"
-                className="flex w-full cursor-pointer items-center justify-center rounded-md px-2 py-1.5 text-lg text-ink/40 hover:bg-ink/5 hover:text-ink"
-              >
-                +
-              </button>
-            </form>
+            {newDocumentButton}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[0.65625rem] font-medium uppercase tracking-[0.16em] text-ink/40">
+              개인 문서 0
+            </span>
+            <p className="text-sm text-ink/30">아직 지원되지 않는 기능입니다.</p>
+            {newDocumentButton}
           </div>
         </div>
 
