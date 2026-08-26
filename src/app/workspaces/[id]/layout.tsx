@@ -18,7 +18,7 @@ export default async function WorkspaceLayout({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: workspace }, user, { data: documents }, { data: allWorkspaces }] =
+  const [{ data: workspace }, user, { data: documents }, { data: allWorkspaces }, { data: activityRows }] =
     await Promise.all([
       supabase
         .from("workspaces")
@@ -32,6 +32,12 @@ export default async function WorkspaceLayout({
         .eq("workspace_id", id)
         .order("updated_at", { ascending: false }),
       supabase.from("workspaces").select("id, name").order("created_at"),
+      supabase
+        .from("workspace_activity")
+        .select("id, message, created_at")
+        .eq("workspace_id", id)
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
 
   if (!workspace) {
@@ -362,7 +368,9 @@ export default async function WorkspaceLayout({
         </div>
       </aside>
       <main className="flex-1 overflow-y-auto bg-canvas">{children}</main>
-      {user && <ActivitySidebar workspaceId={id} members={members} />}
+      {user && (
+        <ActivitySidebar workspaceId={id} members={members} initialActivity={activityRows ?? []} />
+      )}
     </div>
   );
 
