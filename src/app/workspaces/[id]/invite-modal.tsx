@@ -3,12 +3,14 @@
 export function InviteModal({
   open,
   onClose,
+  title = "멤버 초대",
   inviteUrl,
   inviteRole,
   createInviteAction,
 }: {
   open: boolean;
   onClose: () => void;
+  title?: string;
   inviteUrl: string | null;
   inviteRole: string | undefined;
   createInviteAction: (formData: FormData) => void;
@@ -25,7 +27,7 @@ export function InviteModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">멤버 초대</h2>
+          <h2 className="text-sm font-semibold text-ink">{title}</h2>
           <button onClick={onClose} className="text-sm text-ink/50">
             닫기
           </button>
@@ -44,7 +46,7 @@ export function InviteModal({
             className="rounded-md border border-border-ink bg-canvas px-2 py-1 text-sm text-ink"
           >
             <option value="editor">editor</option>
-            <option value="viewer">viewer</option>
+            <option value="guest">guest</option>
           </select>
           <button
             type="submit"
