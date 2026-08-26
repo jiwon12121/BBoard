@@ -208,7 +208,6 @@ export default async function WorkspaceLayout({
       .insert({ workspace_id: id, role, created_by: user.id });
 
     revalidatePath(`/workspaces/${id}`, "layout");
-    redirect(`/workspaces/${id}`);
   }
 
   const inviteUrl = latestInvite
