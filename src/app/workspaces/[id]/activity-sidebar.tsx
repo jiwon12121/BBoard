@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useWorkspacePresence } from "./workspace-presence-context";
 
@@ -46,6 +47,7 @@ export function ActivitySidebar({
 }) {
   const { onlineUsers } = useWorkspacePresence();
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const router = useRouter();
   const presenceByUserId = new Map(onlineUsers.map((u) => [u.userId, u]));
   const sortedMembers = [...(members ?? [])].sort((a, b) => {
     const aOnline = presenceByUserId.has(a.user_id) ? 0 : 1;
@@ -73,6 +75,9 @@ export function ActivitySidebar({
               ...prev,
             ].slice(0, 20),
           );
+          // The sidebar's document list is server-rendered - a document
+          // someone else just created won't show up there on its own.
+          router.refresh();
         },
       )
       .on(
@@ -88,8 +93,10 @@ export function ActivitySidebar({
           const newRow = payload.new as { title?: string; yjs_state?: string };
           const title = newRow.title ?? "제목 없음";
           let message: string | null = null;
+          let titleChanged = false;
           if (oldRow.title !== undefined && oldRow.title !== newRow.title) {
             message = `문서 제목이 "${title}"(으)로 변경되었습니다`;
+            titleChanged = true;
           } else if (oldRow.yjs_state !== newRow.yjs_state) {
             message = `"${title}" 문서가 수정되었습니다`;
           }
@@ -97,6 +104,9 @@ export function ActivitySidebar({
           setActivity((prev) =>
             [{ id: crypto.randomUUID(), message, at: Date.now() }, ...prev].slice(0, 20),
           );
+          // Only the sidebar's displayed title goes stale on a rename - a
+          // plain content edit doesn't need the whole page to refetch.
+          if (titleChanged) router.refresh();
         },
       )
       .on(
