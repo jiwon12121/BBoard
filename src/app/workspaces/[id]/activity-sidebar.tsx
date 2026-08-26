@@ -18,6 +18,12 @@ type Member = {
   name?: string;
 };
 
+type ActivityRow = {
+  id: string;
+  message: string;
+  created_at: string;
+};
+
 function relativeTime(at: number) {
   const diffMs = Date.now() - at;
   const minutes = Math.floor(diffMs / 60_000);
@@ -41,13 +47,37 @@ function colorForUser(userId: string) {
 export function ActivitySidebar({
   workspaceId,
   members,
+  initialActivity,
 }: {
   workspaceId: string;
   members: Member[] | undefined;
+  initialActivity: ActivityRow[];
 }) {
   const { onlineUsers } = useWorkspacePresence();
-  const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [activity, setActivity] = useState<ActivityEntry[]>(() =>
+    initialActivity.map((row) => ({
+      id: row.id,
+      message: row.message,
+      at: new Date(row.created_at).getTime(),
+    })),
+  );
   const router = useRouter();
+
+  // initialActivity is only the *seed* value for useState above - it won't
+  // pick up later prop updates on its own. When our own server action (e.g.
+  // renaming a document) revalidates this page, the fresh row already
+  // arrives in initialActivity well before any realtime event would - other
+  // users only find out via the realtime subscription below, which is why
+  // this was only ever missing for whoever made the change themselves.
+  useEffect(() => {
+    setActivity(
+      initialActivity.map((row) => ({
+        id: row.id,
+        message: row.message,
+        at: new Date(row.created_at).getTime(),
+      })),
+    );
+  }, [initialActivity]);
   const presenceByUserId = new Map(onlineUsers.map((u) => [u.userId, u]));
   const sortedMembers = [...(members ?? [])].sort((a, b) => {
     const aOnline = presenceByUserId.has(a.user_id) ? 0 : 1;
@@ -64,74 +94,20 @@ export function ActivitySidebar({
         {
           event: "INSERT",
           schema: "public",
-          table: "documents",
+          table: "workspace_activity",
           filter: `workspace_id=eq.${workspaceId}`,
         },
         (payload) => {
-          const title = (payload.new as { title?: string }).title ?? "제목 없음";
+          const row = payload.new as ActivityRow;
           setActivity((prev) =>
-            [
-              { id: crypto.randomUUID(), message: `"${title}" 문서가 생성되었습니다`, at: Date.now() },
-              ...prev,
-            ].slice(0, 20),
+            [{ id: row.id, message: row.message, at: new Date(row.created_at).getTime() }, ...prev].slice(
+              0,
+              20,
+            ),
           );
-          // The sidebar's document list is server-rendered - a document
-          // someone else just created won't show up there on its own.
+          // A new document or a rename won't show up in the (server-rendered)
+          // sidebar list on its own.
           router.refresh();
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "documents",
-          filter: `workspace_id=eq.${workspaceId}`,
-        },
-        (payload) => {
-          const oldRow = payload.old as { title?: string; yjs_state?: string };
-          const newRow = payload.new as { title?: string; yjs_state?: string };
-          const title = newRow.title ?? "제목 없음";
-          let message: string | null = null;
-          let titleChanged = false;
-          if (oldRow.title !== undefined && oldRow.title !== newRow.title) {
-            message = `문서 제목이 "${title}"(으)로 변경되었습니다`;
-            titleChanged = true;
-          } else if (oldRow.yjs_state !== newRow.yjs_state) {
-            message = `"${title}" 문서가 수정되었습니다`;
-          }
-          if (!message) return; // metadata-only change (e.g. column width) - not real activity
-          setActivity((prev) =>
-            [{ id: crypto.randomUUID(), message, at: Date.now() }, ...prev].slice(0, 20),
-          );
-          // Only the sidebar's displayed title goes stale on a rename - a
-          // plain content edit doesn't need the whole page to refetch.
-          if (titleChanged) router.refresh();
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "workspace_members",
-          filter: `workspace_id=eq.${workspaceId}`,
-        },
-        async (payload) => {
-          const newUserId = (payload.new as { user_id?: string }).user_id;
-          if (!newUserId) return;
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("name, email")
-            .eq("id", newUserId)
-            .maybeSingle();
-          const name = profile?.name ?? profile?.email ?? "새 멤버";
-          setActivity((prev) =>
-            [
-              { id: crypto.randomUUID(), message: `${name}님이 합류했습니다`, at: Date.now() },
-              ...prev,
-            ].slice(0, 20),
-          );
         },
       )
       .subscribe();
@@ -197,9 +173,7 @@ export function ActivitySidebar({
             </li>
           ))}
           {activity.length === 0 && (
-            <p className="text-sm text-ink/40">
-              접속해 있는 동안의 활동이 여기에 표시됩니다.
-            </p>
+            <p className="text-sm text-ink/40">아직 활동이 없습니다.</p>
           )}
         </ul>
       </div>
