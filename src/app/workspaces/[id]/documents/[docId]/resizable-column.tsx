@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-const DEFAULT_WIDTH = 896;
+export const DEFAULT_WIDTH = 896;
 const MIN_WIDTH = 480;
 const MAX_WIDTH = 1400;
 
@@ -74,6 +74,14 @@ export function ResizableColumn({
         onMouseDown={() => setDragging(true)}
         className="absolute -right-3 top-0 h-full w-1.5 cursor-col-resize rounded bg-transparent hover:bg-border-ink"
       />
+      {dragging && (
+        // A youtube embed is a separate browsing context - if the cursor
+        // crosses over one mid-drag, mousemove/mouseup stop reaching the
+        // window listeners above entirely. This sits above everything
+        // (including any iframe) so the drag keeps hit-testing against our
+        // own page instead.
+        <div className="fixed inset-0 z-50 cursor-col-resize" />
+      )}
     </div>
   );
 }
