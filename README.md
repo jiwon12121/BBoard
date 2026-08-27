@@ -1,6 +1,27 @@
 # BBoard
 
-여러 명이 동시에 같은 문서를 실시간으로 편집할 수 있는, 노션(Notion) 스타일의 협업 워크스페이스 툴입니다.
+여러 명이 동시에 같은 문서를 실시간으로 편집할 수 있는 협업 워크스페이스 툴입니다. 워크스페이스 단위로 문서를 모아 관리하고, 리치 텍스트 에디터에서 이미지·유튜브·컬럼 레이아웃 같은 다양한 서식으로 문서를 작성할 수 있습니다.
+
+## 스크린샷
+
+![워크스페이스 전체 화면](docs/screenshots/workspace-overview.png)
+
+<table>
+  <tr>
+    <td width="33%">
+      <img src="docs/screenshots/editor-toolbar.png" alt="서식 메뉴" />
+      <br />제목·목록·토글·이미지·유튜브·컬럼 등 다양한 서식
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/realtime-cursor.png" alt="실시간 협업 커서" />
+      <br />다른 사용자의 커서가 실시간으로 표시됨
+    </td>
+    <td width="33%">
+      <img src="docs/screenshots/activity-sidebar.png" alt="활동 사이드바" />
+      <br />멤버 온라인 상태 & 활동 기록
+    </td>
+  </tr>
+</table>
 
 ## 주요 기능
 
