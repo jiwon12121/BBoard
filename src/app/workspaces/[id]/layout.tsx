@@ -2,9 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { getCachedUser } from "@/lib/supabase/get-user";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { LogoutButton } from "@/components/logout-button";
 import { ActivitySidebar } from "./activity-sidebar";
 import { DocumentLink } from "./document-link";
+import { ProfileFooter } from "./profile-footer";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 import { WorkspacePresenceProvider } from "./workspace-presence-context";
 
@@ -51,6 +51,7 @@ export default async function WorkspaceLayout({
     { data: memberRows },
     { data: ownMembership },
     { data: favoriteRows },
+    { data: ownProfile },
   ] = await Promise.all([
     isOwner
       ? supabase
@@ -78,6 +79,12 @@ export default async function WorkspaceLayout({
     // saves a full round trip.
     user
       ? supabase.from("document_favorites").select("document_id").eq("user_id", user.id)
+      : Promise.resolve({ data: null }),
+    // For the sidebar footer's name/avatar - can't rely on memberRows for
+    // this (the owner isn't necessarily a workspace_members row), so this
+    // needs its own query rather than reusing that list.
+    user
+      ? supabase.from("profiles").select("email, name, avatar_url").eq("id", user.id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
@@ -224,6 +231,39 @@ export default async function WorkspaceLayout({
     ? `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/invite/${latestInvite.token}`
     : null;
 
+  // Profile name/avatar are global (not scoped to this workspace), but the
+  // only place they're edited from is this sidebar footer, so the actions
+  // live alongside it rather than in a dedicated settings route.
+  async function updateProfileName(formData: FormData) {
+    "use server";
+    const name = formData.get("name");
+    if (typeof name !== "string" || !name.trim()) return;
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from("profiles").update({ name: name.trim() }).eq("id", user.id);
+    revalidatePath(`/workspaces/${id}`, "layout");
+  }
+
+  async function updateProfileAvatar(formData: FormData) {
+    "use server";
+    const avatarUrl = formData.get("avatarUrl");
+    if (typeof avatarUrl !== "string" || !avatarUrl) return;
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from("profiles").update({ avatar_url: avatarUrl }).eq("id", user.id);
+    revalidatePath(`/workspaces/${id}`, "layout");
+  }
+
   const favoriteDocuments = documents?.filter((doc) => favoriteDocIds.has(doc.id)) ?? [];
   const recentDocuments = (documents ?? []).slice(0, 4);
 
@@ -353,23 +393,17 @@ export default async function WorkspaceLayout({
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-border-ink p-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-ink text-xs font-semibold text-canvas">
-              {(user?.user_metadata?.full_name ?? user?.email ?? "?").slice(0, 1)}
-            </div>
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate text-sm text-ink">
-                {user?.user_metadata?.full_name ?? user?.email}
-              </span>
-              <span className="flex items-center gap-1 text-xs text-ink/40">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                {roleLabel} · 온라인
-              </span>
-            </div>
-          </div>
-          <LogoutButton />
-        </div>
+        {user && (
+          <ProfileFooter
+            userId={user.id}
+            email={ownProfile?.email ?? user.email ?? null}
+            name={ownProfile?.name ?? user.user_metadata?.full_name ?? null}
+            avatarUrl={ownProfile?.avatar_url ?? null}
+            roleLabel={roleLabel}
+            updateNameAction={updateProfileName}
+            updateAvatarAction={updateProfileAvatar}
+          />
+        )}
       </aside>
       <main className="flex-1 overflow-y-auto bg-canvas">{children}</main>
       {user && (
@@ -384,7 +418,7 @@ export default async function WorkspaceLayout({
     <WorkspacePresenceProvider
       workspaceId={id}
       userId={user.id}
-      userName={user.user_metadata?.full_name ?? user.email ?? "익명"}
+      userName={ownProfile?.name ?? user.user_metadata?.full_name ?? user.email ?? "익명"}
       isOwner={isOwner}
     >
       {sidebarLayout}
