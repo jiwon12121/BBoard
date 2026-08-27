@@ -2,6 +2,8 @@
 
 여러 명이 동시에 같은 문서를 실시간으로 편집할 수 있는 협업 워크스페이스 툴입니다. 워크스페이스 단위로 문서를 모아 관리하고, 리치 텍스트 에디터에서 이미지·유튜브·컬럼 레이아웃 같은 다양한 서식으로 문서를 작성할 수 있습니다.
 
+**🔗 배포 사이트: [bboard-one.vercel.app](https://bboard-one.vercel.app/)**
+
 ## 스크린샷
 
 ![워크스페이스 전체 화면](docs/screenshots/workspace-overview.png)
