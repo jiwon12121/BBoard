@@ -97,6 +97,16 @@ body {
   background: color-mix(in srgb, var(--ink) 12%, transparent);
 }
 
+/* ProseMirror adds this class itself to a node's own DOM element while a
+   NodeSelection (click-to-select, not a text cursor) is active on it - used
+   for content with nothing to place a text cursor in, like the horizontal
+   rule, image, youtube, and column-layout blocks. */
+.tiptap .ProseMirror-selectednode {
+  outline: 2px solid color-mix(in srgb, var(--ink) 45%, transparent);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
 .tiptap h1 {
   font-size: 1.6em;
   font-weight: 600;
@@ -163,12 +173,36 @@ body {
   border-radius: 6px;
   padding: 0.75em 1em;
   overflow-x: auto;
-  margin: 0.3em 0;
+  /* margin-block, not the `margin` shorthand - see the [data-resize-container]
+     rule further down for why (this selector outranks `.tiptap > *`, so
+     the shorthand would wipe out its 1.75rem side gutter for the handle). */
+  margin-block: 0.3em;
 }
 
 .tiptap pre code {
   background: none;
   padding: 0;
+}
+
+/* Divider, from ./horizontal-rule-extension.ts. margin-block (not the
+   `margin` shorthand) - same reasoning as the [data-resize-container] rule
+   above: the shorthand would also zero out margin-left/right, and this
+   selector (class+element+attribute) outranks `.tiptap > *`'s
+   (class+universal), so it would win and wipe out the 1.75rem gutter
+   `.tiptap > *` reserves for the drag handle, pulling the divider flush to
+   the edge right where the handle should be. */
+.tiptap div[data-type="horizontalRule"] {
+  /* Padding, not the line's own height, is what gives this its click-to-
+     select hit area - the visible line (.hr-line below) stays 1px
+     regardless, sitting vertically centered in that padded box. */
+  padding-block: 0.75em;
+  margin-block: 0.5em;
+  cursor: pointer;
+}
+
+.tiptap div[data-type="horizontalRule"] .hr-line {
+  height: 1px;
+  background-color: var(--border-ink);
 }
 
 /* Checkbox / task list, from @tiptap/extension-task-list + -task-item */
@@ -179,16 +213,17 @@ body {
 
 .tiptap ul[data-type="taskList"] li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5em;
 }
 
 .tiptap ul[data-type="taskList"] li > label {
-  margin-top: 0.35em;
   user-select: none;
 }
 
 .tiptap ul[data-type="taskList"] li > label input[type="checkbox"] {
+  width: 1.1em;
+  height: 1.1em;
   accent-color: var(--ink);
   cursor: pointer;
 }
@@ -211,12 +246,19 @@ body {
 
 .tiptap div[data-type="details"] > button {
   flex-shrink: 0;
-  width: 1.25em;
-  height: 1.5em;
-  margin-top: 0.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5em;
+  /* Matches `.tiptap summary`'s line-height below (in the same em terms),
+     so this fixed-height, flex-centered button lines up with the summary
+     line specifically - not the toggle content's full (possibly much
+     taller, once open) height, which the row's own flex-start alignment
+     is anchored to. */
+  height: 1.6em;
   border-radius: 0.25rem;
   cursor: pointer;
-  color: color-mix(in srgb, var(--ink) 55%, transparent);
+  color: color-mix(in srgb, var(--ink) 80%, transparent);
 }
 
 .tiptap div[data-type="details"] > button:hover {
@@ -227,10 +269,12 @@ body {
   content: "▸";
   display: block;
   text-align: center;
+  font-size: 1.4em;
+  transition: transform 0.15s ease;
 }
 
 .tiptap div[data-type="details"].is-open > button::before {
-  content: "▾";
+  transform: rotate(90deg);
 }
 
 .tiptap div[data-type="details"] > div {
@@ -238,14 +282,47 @@ body {
   min-width: 0;
 }
 
-/* Open/closed visibility of the content is handled by the extension itself
-   (toggling a native `hidden` attribute), not CSS. */
 .tiptap summary {
   font-weight: 500;
+  line-height: 1.6;
+  /* <summary> gets its own native disclosure marker (an arrow/dot,
+     depending on browser) from the UA stylesheet's `display: list-item`
+     just for being a <summary> tag - regardless of whether it's actually
+     inside a <details> element, which ours isn't (the toggle button next
+     to it renders its own ▸/▾ via CSS instead). Without this reset, both
+     markers show up stacked on top of each other. */
+  display: block;
+  list-style: none;
 }
 
+.tiptap summary::marker,
+.tiptap summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The extension toggles content visibility by flipping a native `hidden`
+   attribute directly - by default that's an instant display:none with
+   nothing to animate. Overriding it to stay in normal flow and animating
+   max-height/opacity instead gives the open/close an actual transition.
+   max-height's target (3000px) is just "comfortably more than realistic
+   content" - it caps the transition's travel distance, not the content's
+   real height, so it doesn't clip anything overflow wouldn't already
+   handle. */
 .tiptap div[data-type="detailsContent"] {
+  display: block;
+  overflow: hidden;
+  max-height: 3000px;
+  opacity: 1;
   padding-top: 0.25em;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+.tiptap div[data-type="detailsContent"][hidden] {
+  display: block;
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  pointer-events: none;
 }
 
 /* Image, from @tiptap/extension-image (resize enabled, rendered through
@@ -269,6 +346,47 @@ body {
   width: 100%;
   height: 100%;
   border: none;
+}
+
+/* Click-to-select strips along the video's 4 edges (from
+   youtube-extension.ts) - a click on the iframe itself never reaches this
+   page's own click handling at all (separate browsing context, same
+   reasoning as the drag issues fixed elsewhere), so selecting has to
+   happen on something else. These sit on top of the iframe only at the
+   edges; the center is left uncovered so it still plays normally. */
+.youtube-select-strip {
+  position: absolute;
+  cursor: pointer;
+}
+
+.youtube-select-strip[data-edge="top"],
+.youtube-select-strip[data-edge="bottom"] {
+  left: 0;
+  right: 0;
+  height: 0.875rem;
+}
+
+.youtube-select-strip[data-edge="top"] {
+  top: 0;
+}
+
+.youtube-select-strip[data-edge="bottom"] {
+  bottom: 0;
+}
+
+.youtube-select-strip[data-edge="left"],
+.youtube-select-strip[data-edge="right"] {
+  top: 0.875rem;
+  bottom: 0.875rem;
+  width: 0.875rem;
+}
+
+.youtube-select-strip[data-edge="left"] {
+  left: 0;
+}
+
+.youtube-select-strip[data-edge="right"] {
+  right: 0;
 }
 
 /* Resize handles, rendered by @tiptap/core's ResizableNodeView (used by the
@@ -394,4 +512,57 @@ body {
   border-bottom-width: var(--handle-border);
   border-right-width: var(--handle-border);
   border-bottom-right-radius: 0.2rem;
+}
+
+/* Columns, from ./columns-extension.ts. margin-block, not the `margin`
+   shorthand - same reasoning as [data-resize-container] and .tiptap hr
+   above (this selector also outranks `.tiptap > *`). */
+.tiptap div[data-type="columnList"] {
+  position: relative;
+  margin-block: 0.5em;
+}
+
+.tiptap div[data-type="columnList"] > [data-column-row] {
+  display: flex;
+}
+
+.tiptap div[data-type="column"] {
+  min-width: 0;
+  padding: 0 1rem;
+}
+
+.tiptap div[data-type="column"]:first-child {
+  padding-left: 0;
+}
+
+.tiptap div[data-type="column"]:last-child {
+  padding-right: 0;
+}
+
+/* Static now (not draggable) - clicking it selects the columnList block
+   (see columns-extension.ts) rather than resizing anything. */
+.column-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 0.75rem;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.column-divider::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-ink);
+  transform: translateX(-50%);
+  transition: background 0.12s ease;
+}
+
+.column-divider:hover::after {
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
 }

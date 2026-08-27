@@ -19,6 +19,9 @@ export const ResizableYoutube = Youtube.extend({
   // for the custom reorder drag-handle. Not needed since reordering goes
   // through that custom handle, not native HTML5 drag.
   draggable: false,
+  // See image-extension.ts's ResizableImage.extend for why this is needed
+  // for the block to be click-to-select + Delete-able.
+  atom: true,
   addStorage() {
     return {
       maxWidth: undefined as number | undefined,
@@ -70,6 +73,25 @@ export const ResizableYoutube = Youtube.extend({
       const iframe = document.createElement("iframe");
       iframe.setAttribute("allowfullscreen", String(this.options.allowFullscreen));
       wrapper.appendChild(iframe);
+
+      // A click on the iframe itself never reaches this page's own click
+      // handling (separate browsing context - it just plays the video), so
+      // there's nowhere to click to select the block instead. These sit on
+      // top of the iframe only along its 4 edges - clicking one selects the
+      // block; the uncovered center still plays normally on a single click.
+      (["top", "bottom", "left", "right"] as const).forEach((edge) => {
+        const strip = document.createElement("div");
+        strip.className = "youtube-select-strip";
+        strip.dataset.edge = edge;
+        strip.contentEditable = "false";
+        strip.draggable = false;
+        strip.addEventListener("click", () => {
+          const pos = getPos();
+          if (pos === undefined) return;
+          editor.chain().focus().setNodeSelection(pos).run();
+        });
+        wrapper.appendChild(strip);
+      });
 
       const syncSrc = (currentNode: PMNode) => {
         const embedUrl = getEmbedUrlFromYoutubeUrl({

@@ -207,6 +207,18 @@ export function Toolbar({
             >
               유튜브
             </ToolbarButton>
+            <ToolbarButton
+              label="구분선"
+              onClick={run(() => editor.chain().focus().setHorizontalRule().run())}
+            >
+              구분선
+            </ToolbarButton>
+            <ToolbarButton
+              label="컬럼 나누기"
+              onClick={run(() => editor.chain().focus().insertColumns().run())}
+            >
+              컬럼 나누기
+            </ToolbarButton>
           </div>
         </>
       )}
