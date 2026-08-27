@@ -13,6 +13,12 @@ const RESIZE_MANAGED_ATTRIBUTES = new Set(["src", "width", "height"]);
 // configured width from React (see editor.tsx).
 export const ResizableImage = Image.extend({
   draggable: false,
+  // Neither @tiptap/extension-image nor StarterKit's other node extensions
+  // set this, but clicking to create a NodeSelection (so the image can be
+  // selected and deleted like text, since there's no text inside it to
+  // click into) specifically requires it - see prosemirror-view's
+  // selectClickedLeaf, which only does that for atom nodes.
+  atom: true,
   addStorage() {
     return {
       maxWidth: undefined as number | undefined,

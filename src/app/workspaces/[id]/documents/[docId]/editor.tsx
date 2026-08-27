@@ -12,6 +12,8 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IndexeddbPersistence } from "y-indexeddb";
 import useYProvider from "y-partyserver/react";
+import { Column, ColumnList } from "./columns-extension";
+import { AtomHorizontalRule } from "./horizontal-rule-extension";
 import { ResizableImage } from "./image-extension";
 import { DEFAULT_WIDTH, ResizableColumn } from "./resizable-column";
 import { Toolbar } from "./toolbar";
@@ -228,7 +230,11 @@ export function DocumentEditor({
       immediatelyRender: false,
       editable,
       extensions: [
-        StarterKit.configure({ undoRedo: false }),
+        // horizontalRule disabled here in favor of the atom:true version
+        // below it, so the divider can be click-selected and deleted -
+        // see AtomHorizontalRule's own comment.
+        StarterKit.configure({ undoRedo: false, horizontalRule: false }),
+        AtomHorizontalRule,
         Collaboration.configure({ document: provider.doc }),
         CollaborationCaret.configure({
           provider,
@@ -241,6 +247,8 @@ export function DocumentEditor({
         TaskItem.configure({ nested: true }),
         ResizableImage,
         ResizableYoutube,
+        ColumnList,
+        Column,
       ],
       editorProps: {
         handleDrop: (view, event, _slice, moved) => {
