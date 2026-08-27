@@ -46,30 +46,40 @@ export default async function WorkspaceLayout({
 
   const isOwner = user?.id === workspace.owner_id;
 
-  const [{ data: latestInvite }, { data: memberRows }, { data: ownMembership }] =
-    await Promise.all([
-      isOwner
-        ? supabase
-            .from("workspace_invites")
-            .select("token, role")
-            .eq("workspace_id", id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-      // Any member can already read the full membership list per RLS - the
-      // right sidebar's member list needs it regardless of role, not just
-      // the owner-only member management modal.
-      supabase.from("workspace_members").select("user_id, role").eq("workspace_id", id),
-      !isOwner && user
-        ? supabase
-            .from("workspace_members")
-            .select("role")
-            .eq("workspace_id", id)
-            .eq("user_id", user.id)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+  const [
+    { data: latestInvite },
+    { data: memberRows },
+    { data: ownMembership },
+    { data: favoriteRows },
+  ] = await Promise.all([
+    isOwner
+      ? supabase
+          .from("workspace_invites")
+          .select("token, role")
+          .eq("workspace_id", id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    // Any member can already read the full membership list per RLS - the
+    // right sidebar's member list needs it regardless of role, not just
+    // the owner-only member management modal.
+    supabase.from("workspace_members").select("user_id, role").eq("workspace_id", id),
+    !isOwner && user
+      ? supabase
+          .from("workspace_members")
+          .select("role")
+          .eq("workspace_id", id)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    // Only depends on `user` (already known from the batch above), not on
+    // anything else in this batch - fetching it alongside instead of after
+    // saves a full round trip.
+    user
+      ? supabase.from("document_favorites").select("document_id").eq("user_id", user.id)
+      : Promise.resolve({ data: null }),
+  ]);
 
   const roleLabel = isOwner
     ? "소유자"
@@ -80,12 +90,6 @@ export default async function WorkspaceLayout({
         : "게스트";
   const canEdit = isOwner || ownMembership?.role === "editor";
 
-  const { data: favoriteRows } = user
-    ? await supabase
-        .from("document_favorites")
-        .select("document_id")
-        .eq("user_id", user.id)
-    : { data: null };
   const favoriteDocIds = new Set(favoriteRows?.map((f) => f.document_id));
 
   const { data: memberProfiles } = memberRows?.length

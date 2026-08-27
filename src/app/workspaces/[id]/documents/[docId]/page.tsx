@@ -43,22 +43,37 @@ export default async function DocumentPage({
     (isOwner && workspace?.kind === "personal") ||
     (workspace?.kind === "team" && document.is_personal && document.created_by === user?.id);
 
-  const [{ data: ownWorkspaceMembership }, { data: ownDocumentMembership }] = user
-    ? await Promise.all([
-        supabase
-          .from("workspace_members")
-          .select("role")
-          .eq("workspace_id", id)
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("document_members")
-          .select("role")
-          .eq("document_id", docId)
-          .eq("user_id", user.id)
-          .maybeSingle(),
-      ])
-    : [{ data: null }, { data: null }];
+  // latestDocumentInvite only depends on `canShare` (already known from the
+  // first batch above), not on the membership rows below it - fetching all
+  // three together instead of after saves a full round trip.
+  const [{ data: ownWorkspaceMembership }, { data: ownDocumentMembership }, { data: latestDocumentInvite }] =
+    await Promise.all([
+      user
+        ? supabase
+            .from("workspace_members")
+            .select("role")
+            .eq("workspace_id", id)
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      user
+        ? supabase
+            .from("document_members")
+            .select("role")
+            .eq("document_id", docId)
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      canShare
+        ? supabase
+            .from("document_invites")
+            .select("token, role")
+            .eq("document_id", docId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
   // Whether this user can actually type in the editor - separate from
   // canShare/isOwner, since a guest (workspace-level or document-level)
@@ -69,16 +84,6 @@ export default async function DocumentPage({
       ? document.created_by === user?.id
       : ownWorkspaceMembership?.role === "editor") ||
     ownDocumentMembership?.role === "editor";
-
-  const { data: latestDocumentInvite } = canShare
-    ? await supabase
-        .from("document_invites")
-        .select("token, role")
-        .eq("document_id", docId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
 
   async function renameDocument(formData: FormData) {
     "use server";

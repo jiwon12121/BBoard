@@ -10,6 +10,7 @@ import TaskList from "@tiptap/extension-task-list";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { IndexeddbPersistence } from "y-indexeddb";
 import useYProvider from "y-partyserver/react";
 import { ResizableImage } from "./image-extension";
 import { DEFAULT_WIDTH, ResizableColumn } from "./resizable-column";
@@ -115,6 +116,43 @@ export function DocumentEditor({
       provider.off("synced", handleSynced);
     };
   }, [provider]);
+
+  // Caches the Yjs doc in the browser (IndexedDB) so a document that's been
+  // opened before can render instantly from that local copy on a revisit,
+  // instead of waiting on a fresh round trip to the sync server every time.
+  // Yjs merges updates regardless of arrival order, so the network sync
+  // above still runs the same as always and just reconciles in place once
+  // it catches up - no special handling needed for the two racing.
+  const [localSynced, setLocalSynced] = useState(false);
+
+  useEffect(() => {
+    setLocalSynced(false);
+    const persistence = new IndexeddbPersistence(documentId, provider.doc);
+    const handleSynced = () => setLocalSynced(true);
+    persistence.on("synced", handleSynced);
+    return () => {
+      persistence.off("synced", handleSynced);
+      persistence.destroy();
+    };
+  }, [documentId, provider.doc]);
+
+  // Local cache usually finishes near-instantly, so the loading state below
+  // is often true for a single frame - just long enough to flash on screen
+  // and off again, which reads as a glitch rather than "loading". Waiting a
+  // beat before showing it means content that's ready by then never shows
+  // any loading state at all, and only genuinely slow loads (a fresh
+  // network sync with no local cache yet) see it.
+  const contentReady = synced || localSynced;
+  const [showLoadingSkeleton, setShowLoadingSkeleton] = useState(false);
+
+  useEffect(() => {
+    if (contentReady) {
+      setShowLoadingSkeleton(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowLoadingSkeleton(true), 150);
+    return () => clearTimeout(timer);
+  }, [contentReady]);
 
   // Reports which document this user is currently on, for the workspace
   // activity sidebar's "지금 이 워크스페이스" list.
@@ -252,9 +290,10 @@ export function DocumentEditor({
     // Existing images/videos were sized against whatever the document's
     // width was at the time - narrowing the document past one of them
     // should shrink it back down to fit too, not just cap future resizes.
-    // Runs off `synced` as well so media that arrives already oversized
-    // (opening a doc that's since been narrowed) gets caught on load, not
-    // only on the next live width change.
+    // Runs off `synced`/`localSynced` too so media that arrives already
+    // oversized (opening a doc that's since been narrowed, whether from the
+    // local cache or a fresh network sync) gets caught on load, not only on
+    // the next live width change.
     const { state } = editor;
     let tr = state.tr;
     let changed = false;
@@ -271,7 +310,7 @@ export function DocumentEditor({
       changed = true;
     });
     if (changed) editor.view.dispatch(tr);
-  }, [editor, mediaWidth, synced]);
+  }, [editor, mediaWidth, synced, localSynced]);
 
   // Only one drag handle should be visible at a time: left by default,
   // right only in the last 10% of the hovered block's own row width (not
@@ -385,9 +424,15 @@ export function DocumentEditor({
                 {null}
               </DragHandle>
             )}
-            {!synced && (
-              <div className="absolute inset-0 flex items-center justify-center bg-canvas/80">
-                <span className="text-sm text-ink/50">불러오는 중...</span>
+            {showLoadingSkeleton && !contentReady && (
+              <div className="absolute inset-0 flex flex-col gap-3 bg-canvas p-4 pt-8">
+                <div className="h-5 w-3/4 animate-pulse rounded-md bg-border-ink" />
+                <div className="h-4 w-full animate-pulse rounded-md bg-border-ink" />
+                <div className="h-4 w-5/6 animate-pulse rounded-md bg-border-ink" />
+                <div className="h-4 w-2/3 animate-pulse rounded-md bg-border-ink" />
+                <div className="mt-3 h-4 w-full animate-pulse rounded-md bg-border-ink" />
+                <div className="h-4 w-4/5 animate-pulse rounded-md bg-border-ink" />
+                <div className="h-4 w-1/2 animate-pulse rounded-md bg-border-ink" />
               </div>
             )}
           </div>
