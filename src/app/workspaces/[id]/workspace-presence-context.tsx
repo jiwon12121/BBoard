@@ -51,6 +51,12 @@ export function WorkspacePresenceProvider({
   const channelRef = useRef<RealtimeChannel | null>(null);
   const currentDocRef = useRef<{ id: string; title: string } | null>(null);
 
+  // Reconnects the whole presence channel whenever the display name changes
+  // (e.g. after editing the profile) rather than trying to re-track in
+  // place without a reconnect - simpler and more reliably correct, at the
+  // cost of a brief moment where the tracked current-document info is
+  // reset (restored below from currentDocRef as soon as the new connection
+  // subscribes, so it's barely noticeable).
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase.channel(`workspace-presence:${workspaceId}`, {
@@ -65,12 +71,22 @@ export function WorkspacePresenceProvider({
           documentId?: string;
           documentTitle?: string;
         }>();
-        const list = Object.entries(state).map(([key, presences]) => ({
-          userId: key,
-          name: presences[0]?.name ?? "익명",
-          documentId: presences[0]?.documentId,
-          documentTitle: presences[0]?.documentTitle,
-        }));
+        const list = Object.entries(state).map(([key, presences]) => {
+          // A hard refresh briefly leaves the old (pre-refresh) connection
+          // tracked under the same key alongside the new one, until the old
+          // one times out - presences[0] is whichever tracked first, which
+          // during that overlap is the stale one, so a just-changed name
+          // can flash back to the old value for a moment. The most
+          // recently tracked entry (the end of the array) is the one to
+          // trust.
+          const latest = presences[presences.length - 1];
+          return {
+            userId: key,
+            name: latest?.name ?? "익명",
+            documentId: latest?.documentId,
+            documentTitle: latest?.documentTitle,
+          };
+        });
         setOnlineUsers(list);
       })
       .on("presence", { event: "join" }, () => {
@@ -78,7 +94,11 @@ export function WorkspacePresenceProvider({
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
-          await channel.track({ name: userName });
+          const doc = currentDocRef.current;
+          await channel.track({
+            name: userName,
+            ...(doc ? { documentId: doc.id, documentTitle: doc.title } : {}),
+          });
         }
       });
 
