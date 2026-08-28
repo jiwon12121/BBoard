@@ -45,3 +45,7 @@ next-env.d.ts
 
 # local reference material, not part of the app
 /reference
+
+# AI agent instructions - local-only, not part of the app
+/CLAUDE.md
+/AGENTS.md
