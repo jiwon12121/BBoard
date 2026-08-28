@@ -7,6 +7,12 @@
 
 <img src="docs/screenshots/login.png" width="360" alt="로그인 화면" />
 
+## 아키텍처
+
+![아키텍처 다이어그램](docs/architecture.svg)
+
+Next.js 앱이 문서 메타데이터·권한·활동 기록 등은 Supabase에서 직접 다루고, 문서 **본문 내용의 실시간 협업 편집**만 별도로 배포되는 Cloudflare Worker(`workers/sync`)가 Durable Object 하나당 문서 하나씩 담당해 Yjs 문서 상태를 유지·동기화합니다. 이 워커가 주기적으로 Yjs 상태 스냅샷을 Supabase의 `documents.yjs_state` 컬럼에 저장하기 때문에, 워커가 재시작되어도 내용이 유지됩니다.
+
 ## 스크린샷
 
 ![워크스페이스 전체 화면](docs/screenshots/workspace-overview.png)
@@ -56,10 +62,6 @@
 | 에디터 | [TipTap](https://tiptap.dev) v3 (ProseMirror) + [Yjs](https://github.com/yjs/yjs) |
 | 실시간 동기화 서버 | Cloudflare Workers + Durable Objects ([y-partyserver](https://github.com/partykit/partykit)) |
 | 백엔드 | [Supabase](https://supabase.com) — Postgres, Row Level Security, Auth, Storage, Realtime |
-
-### 아키텍처 한 줄 요약
-
-Next.js 앱이 문서 메타데이터·권한·활동 기록 등은 Supabase에서 직접 다루고, 문서 **본문 내용의 실시간 협업 편집**만 별도로 배포되는 Cloudflare Worker(`workers/sync`)가 Durable Object 하나당 문서 하나씩 담당해 Yjs 문서 상태를 유지·동기화합니다. 이 워커가 주기적으로 Yjs 상태 스냅샷을 Supabase의 `documents.yjs_state` 컬럼에 저장하기 때문에, 워커가 재시작되어도 내용이 유지됩니다.
 
 ## 시작하기
 
