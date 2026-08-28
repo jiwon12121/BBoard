@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" role="img" aria-label="사용자 A는 Vercel(일반 요청)과 Cloudflare Worker(실시간 편집) 양쪽에 연결되고, 같은 문서를 보는 사용자 B는 같은 Worker 인스턴스에 합류한다. Vercel과 Worker는 결국 같은 Supabase 데이터베이스로 모인다.">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap');
+
+    :root {
+      --canvas: #fcfaf6;
+      --border: #e1dacc;
+      --ink: #1a1714;
+      --ink-soft: #6b6259;
+      --accent: #8a6559;
+      --accent-soft: #8a655926;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --canvas: #18140f;
+        --border: #3c342a;
+        --ink: #f3ede2;
+        --ink-soft: #b3a897;
+        --accent: #d3a690;
+        --accent-soft: #d3a69026;
+      }
+    }
+
+    .bg { fill: var(--canvas); }
+    .box-fill { fill: var(--canvas); }
+    .box-stroke { stroke: var(--border); fill: none; }
+    .box-stroke-accent { stroke: var(--accent); fill: var(--accent-soft); }
+    .stack-behind { fill: var(--canvas); stroke: var(--border); }
+    .box-label { font-family: "Instrument Sans", sans-serif; font-weight: 600; fill: var(--ink); }
+    .box-sublabel { font-family: "Instrument Sans", sans-serif; font-weight: 400; fill: var(--ink-soft); }
+    .note { font-family: "Instrument Sans", sans-serif; font-style: italic; fill: var(--ink-soft); }
+    .arrow-line { stroke: var(--ink-soft); stroke-width: 1.5; fill: none; }
+    .arrow-line-accent { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+    .arrow-label { font-family: "IBM Plex Mono", monospace; font-weight: 500; fill: var(--ink); }
+    .arrow-label-accent { font-family: "IBM Plex Mono", monospace; font-weight: 500; fill: var(--accent); }
+    .arrow-sublabel { font-family: "Instrument Sans", sans-serif; fill: var(--ink-soft); }
+    .marker-ink { fill: var(--ink-soft); }
+    .marker-accent { fill: var(--accent); }
+  </style>
+
+  <defs>
+    <marker id="arrow-ink" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0,0 7,3 0,6" class="marker-ink" />
+    </marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0,0 7,3 0,6" class="marker-accent" />
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="640" />
+
+  <!-- User A -->
+  <rect x="50" y="30" width="210" height="64" rx="8" class="box-fill box-stroke" />
+  <text x="155" y="56" text-anchor="middle" class="box-label" font-size="14">사용자 A</text>
+  <text x="155" y="75" text-anchor="middle" class="box-sublabel" font-size="11">브라우저 · TipTap 에디터</text>
+
+  <!-- User B -->
+  <rect x="700" y="30" width="210" height="64" rx="8" class="box-fill box-stroke" />
+  <text x="805" y="56" text-anchor="middle" class="box-label" font-size="14">사용자 B</text>
+  <text x="805" y="75" text-anchor="middle" class="box-sublabel" font-size="11">같은 문서를 보는 중</text>
+
+  <!-- Vercel -->
+  <rect x="50" y="290" width="250" height="86" rx="8" class="box-fill box-stroke" />
+  <text x="175" y="325" text-anchor="middle" class="box-label" font-size="14">Vercel</text>
+  <text x="175" y="345" text-anchor="middle" class="box-sublabel" font-size="11">Next.js 서버</text>
+  <text x="175" y="362" text-anchor="middle" class="box-sublabel" font-size="11">페이지 · 서버 액션</text>
+
+  <!-- Cloudflare Worker stack -->
+  <rect x="538" y="272" width="390" height="122" rx="8" class="stack-behind" />
+  <rect x="529" y="263" width="390" height="122" rx="8" class="stack-behind" />
+  <rect x="520" y="254" width="390" height="122" rx="8" class="box-fill box-stroke-accent" />
+  <text x="715" y="284" text-anchor="middle" class="box-label" font-size="14">Cloudflare Worker</text>
+  <text x="715" y="304" text-anchor="middle" class="box-sublabel" font-size="11">DocumentSync</text>
+  <text x="715" y="321" text-anchor="middle" class="box-sublabel" font-size="11">이 문서 전용 Durable Object</text>
+  <text x="715" y="352" text-anchor="middle" class="note" font-size="10.5">문서마다 별도 인스턴스가 생성됨</text>
+
+  <!-- Supabase -->
+  <rect x="272" y="510" width="340" height="100" rx="8" class="box-fill box-stroke" />
+  <text x="442" y="546" text-anchor="middle" class="box-label" font-size="14">Supabase</text>
+  <text x="442" y="566" text-anchor="middle" class="box-sublabel" font-size="11">Postgres + RLS · Auth · Storage</text>
+  <text x="442" y="583" text-anchor="middle" class="box-sublabel" font-size="11">Realtime (활동 기록 브로드캐스트)</text>
+
+  <!-- User A -> Vercel -->
+  <path d="M 145 94 L 175 290" class="arrow-line" marker-end="url(#arrow-ink)" />
+  <text x="70" y="185" class="arrow-label" font-size="11">HTTP</text>
+  <text x="70" y="200" class="arrow-sublabel" font-size="11">페이지 · 권한 체크 · CRUD</text>
+
+  <!-- User A -> Worker -->
+  <path d="M 250 68 C 420 68, 480 180, 640 254" class="arrow-line-accent" marker-end="url(#arrow-accent)" />
+  <text x="330" y="150" class="arrow-label-accent" font-size="11">WebSocket</text>
+  <text x="330" y="165" class="arrow-sublabel" font-size="11">실시간 편집 (Yjs)</text>
+
+  <!-- User B -> Worker -->
+  <path d="M 805 94 L 805 254" class="arrow-line-accent" marker-end="url(#arrow-accent)" />
+  <text x="817" y="180" class="arrow-label-accent" font-size="11">WebSocket</text>
+
+  <!-- Vercel -> Supabase -->
+  <path d="M 220 376 C 260 430, 320 460, 380 510" class="arrow-line" marker-end="url(#arrow-ink)" />
+  <text x="235" y="450" class="arrow-label" font-size="11">쿼리</text>
+  <text x="235" y="465" class="arrow-sublabel" font-size="11">RLS 적용</text>
+
+  <!-- Worker -> Supabase -->
+  <path d="M 660 394 C 610 440, 560 470, 515 510" class="arrow-line-accent" marker-end="url(#arrow-accent)" />
+  <text x="615" y="450" class="arrow-label-accent" font-size="11">스냅샷 저장/로드</text>
+  <text x="615" y="465" class="arrow-sublabel" font-size="11">documents.yjs_state</text>
+</svg>
