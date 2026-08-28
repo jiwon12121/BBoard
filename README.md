@@ -11,7 +11,12 @@
 
 ![아키텍처 다이어그램](docs/architecture.svg)
 
-Next.js 앱이 문서 메타데이터·권한·활동 기록 등은 Supabase에서 직접 다루고, 문서 **본문 내용의 실시간 협업 편집**만 별도로 배포되는 Cloudflare Worker(`workers/sync`)가 Durable Object 하나당 문서 하나씩 담당해 Yjs 문서 상태를 유지·동기화합니다. 이 워커가 주기적으로 Yjs 상태 스냅샷을 Supabase의 `documents.yjs_state` 컬럼에 저장하기 때문에, 워커가 재시작되어도 내용이 유지됩니다.
+BBoard는 역할이 다른 백엔드 두 개로 나뉘어 있습니다.
+
+- **Next.js 앱 (Vercel)** — 워크스페이스/문서 목록, 로그인, 권한 확인, 초대, 활동 기록처럼 일반적인 요청을 처리합니다. Supabase Postgres를 데이터베이스로 쓰고, 접근 권한은 애플리케이션 코드가 아니라 Postgres의 Row Level Security(RLS) 정책이 직접 강제합니다.
+- **동기화 서버 (Cloudflare Worker, `workers/sync`)** — 문서 본문을 여러 명이 동시에 편집하는 부분만 전담합니다. 문서마다 별도의 Durable Object 인스턴스가 만들어지고, 그 문서에 접속한 사람들의 편집 내용을 Yjs(CRDT)로 충돌 없이 병합합니다. 이 상태는 주기적으로 Supabase의 `documents.yjs_state` 컬럼에 스냅샷으로 저장되어, 워커가 재시작돼도 문서 내용은 유지됩니다.
+
+즉 일반적인 페이지 로딩/권한 체크는 Next.js가, 같은 문서를 실시간으로 같이 편집하는 부분만 Cloudflare Worker가 맡고, 둘 다 결국 같은 Supabase 데이터베이스를 공유합니다.
 
 ## 스크린샷
 
