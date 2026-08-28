@@ -10,23 +10,16 @@
 ## 스크린샷
 
 ![워크스페이스 전체 화면](docs/screenshots/workspace-overview.png)
+사이드바(즐겨찾기/최근 문서/팀 문서/개인 문서) + 문서 에디터 + 활동 사이드바가 함께 보이는 전체 화면
 
-<table>
-  <tr>
-    <td width="33%">
-      <img src="docs/screenshots/editor-toolbar.png" alt="서식 메뉴" />
-      <br />제목·목록·토글·이미지·유튜브·컬럼 등 다양한 서식
-    </td>
-    <td width="33%">
-      <img src="docs/screenshots/realtime-cursor.png" alt="실시간 협업 커서" />
-      <br />다른 사용자의 커서가 실시간으로 표시됨
-    </td>
-    <td width="33%">
-      <img src="docs/screenshots/activity-sidebar.png" alt="활동 사이드바" />
-      <br />멤버 온라인 상태 & 활동 기록
-    </td>
-  </tr>
-</table>
+![서식 메뉴](docs/screenshots/editor-toolbar.png)
+제목·목록·체크박스·토글·이미지·유튜브·구분선·컬럼 등 다양한 서식
+
+![실시간 협업 커서](docs/screenshots/realtime-cursor.png)
+다른 사용자의 커서가 실시간으로 표시됨
+
+![활동 사이드바](docs/screenshots/activity-sidebar.png)
+멤버 온라인 상태 & 활동 기록
 
 ## 주요 기능
 
